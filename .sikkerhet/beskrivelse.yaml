@@ -1,0 +1,5 @@
+version: 2.0
+organization: Eiendom # Verdier: [Eiendom|Sjø|Land|Geodesi|IT|Plattform]
+product: matrikkel
+repo_types:           # Repo som primært inneholder ...
+  - Ops               # ... konfigurasjon, script etc for bygg, deploy og drift
