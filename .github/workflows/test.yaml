@@ -21,7 +21,11 @@ jobs:
       - name: Update replicas & commit
         run: |
           echo '${{ inputs.replicas }}' >> src/replicas
+          git add src/replicas
           git status
-          echo '${{ toJson(github) }}'
-          echo "${{ github.actor }}"
+          echo '${{ toJson(github.event.sender) }}'
+          git config --global user.name '${{ github.event.sender.login }}'
+          git config --global user.email '${{ github.event.sender.login }}@users.noreply.github.com'
+          git commit -m '[bot] Scale replicas to ${{ inputs.replicas }}'
+          git show
           
