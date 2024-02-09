@@ -1,0 +1,27 @@
+name: Test worflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      replicas:
+        description: "Number of replicas"
+        required: true
+        type: number
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Update replicas & commit
+        run: |
+          echo '${{ inputs.replicas }}' >> src/replicas
+          git status
+          echo '${{ toJson(github) }}'
+          echo "${{ github.actor }}"
+          
