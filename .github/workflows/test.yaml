@@ -11,6 +11,7 @@ on:
 permissions:
   id-token: write
   contents: write
+  pull-requests: write
 
 jobs:
   create_pr:
@@ -20,6 +21,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Update replicas & commit
         run: |
+          # New branch - update-replicas-[new replica num]-[date in UTC]
+          BRANCH_NAME="update-replicas-${{ inputs.replicas }}-$(date --utc '+%Y-%m-%d-%H-%M-%SZ')"
+          git switch -c "$BRANCH_NAME"
           # Update replicas
           echo '${{ inputs.replicas }}' >> src/replicas
           git add src/replicas
@@ -28,12 +32,18 @@ jobs:
           echo '${{ toJson(github.event.sender) }}' # DEBUG
 
           # Get name of person triggering the workflow, and add commiter as '[action] Georg Maskot'
-          NAME="$(gh api 'users/${{ github.event.sender.login }}' --jq '.name')"
+          USERNAME='${{ github.event.sender.login }}'
+          NAME="$(gh api "users/$USERNAME" --jq '.name')"
           git config --global user.name "[action] $NAME"
-          git config --global user.email '${{ github.event.sender.login }}@users.noreply.github.com'
-          git commit -m '[action] Scale replicas to ${{ inputs.replicas }}'
+          git config --global user.email "$USERNAME@users.noreply.github.com"
+          MESSAGE='[action] Scale replicas to ${{ inputs.replicas }}'
+          git commit -m "$MESSAGE"
           git show # DEBUG
-          git push
+          git remote -v # DEBUG
+
+          # gh pr create can push for us, but we want to explicity avoid interactive behavior by pushing first and using --head
+          git push --set-upstream origin "$BRANCH_NAME"
+          gh pr create --title "[automerge]$MESSAGE" --body "Action triggered by @$USERNAME" --head "$BRANCH_NAME"
         env:
           GH_TOKEN: ${{ github.token }}
           
