@@ -44,6 +44,7 @@ jobs:
           # gh pr create can push for us, but we want to explicity avoid interactive behavior by pushing first and using --head
           git push --set-upstream origin "$BRANCH_NAME"
           gh pr create --title "[automerge]$MESSAGE" --body "Action triggered by @$USERNAME" --head "$BRANCH_NAME"
+          gh pr merge --auto --rebase
         env:
           GH_TOKEN: ${{ github.token }}
           
