@@ -24,28 +24,7 @@ jobs:
           # Update replicas
           echo '${{ inputs.replicas }}' >> src/replicas
           git add src/replicas
-      - name: Create PR with changes
-        run: |
-          git status # DEBUG
-          echo '${{ toJson(github.event.sender) }}' # DEBUG
-
-          # Get name of person triggering the workflow, and the name in author field, e.g., '[action] Georg Maskot'
-          USERNAME='${{ github.event.sender.login }}'
-          NAME="$(gh api "users/$USERNAME" --jq '.name')"
-          git config --global user.name "[action] $NAME"
-          git config --global user.email "$USERNAME@users.noreply.github.com"
-          MESSAGE='[action] Scale replicas to ${{ inputs.replicas }}'
-          git commit -m "$MESSAGE"
-          git show # DEBUG
-          git remote -v # DEBUG
-
-          # gh pr create can push for us, but we want to explicity avoid interactive behavior by pushing first and using --head
-          # New branch - update-replicas-[new replica num]-[date in UTC]
-          BRANCH_NAME="update-replicas-${{ inputs.replicas }}-$(date --utc '+%Y-%m-%d-%H-%M-%SZ')"
-          git switch -c "$BRANCH_NAME"
-          git push --set-upstream origin "$BRANCH_NAME"
-          gh pr create --title "[automerge]$MESSAGE" --body "$MESSAGE\nAction triggered by @$USERNAME" --head "$BRANCH_NAME"
-          gh pr merge --auto --rebase
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: ./.github/actions/create-pr
+        with:
+          github-token: ${{ github.token }}
           
