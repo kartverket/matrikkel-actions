@@ -1,34 +1,43 @@
 name: Create PR
-description: Create a branch, push it and create a PR, optionally merge the PR
+description: Create a branch, push it and create a PR, optionally merge the PR.
 inputs:
-  github-token:
+  github_token:
     description: The github.token token
     required: true
+  commit_message:
+    description: The message used in the commit ([action] will be prefixed)
+    required: true
+  branch_name_prefix:
+    description: Prefix for the branch name
+    required: true
+  automerge:
+    description: Should the PR be automatically merged?
+    default: 'true'
+    required: false
 runs:
   using: "composite"
   steps:
-    - name: Create PR with changes
+    - name: Commit and create PR with changes
       shell: bash
       run: |
-        git status # DEBUG
-        echo '${{ toJson(github.event.sender) }}' # DEBUG
-
         # Get name of person triggering the workflow, and the name in author field, e.g., '[action] Georg Maskot'
         USERNAME='${{ github.event.sender.login }}'
         NAME="$(gh api "users/$USERNAME" --jq '.name')"
         git config --global user.name "[action] $NAME"
         git config --global user.email "$USERNAME@users.noreply.github.com"
-        MESSAGE='[action] Scale replicas to ${{ inputs.replicas }}'
+        MESSAGE='[action] ${{ inputs.commit_message }}'
         git commit -m "$MESSAGE"
-        git show # DEBUG
-        git remote -v # DEBUG
 
+        # Create a new branch and a PR
         # gh pr create can push for us, but we want to explicity avoid interactive behavior by pushing first and using --head
-        # New branch - update-replicas-[new replica num]-[date in UTC]
-        BRANCH_NAME="update-replicas-$(date --utc '+%Y-%m-%d-%H-%M-%SZ')"
+        BRANCH_NAME="${{ inputs.branch_name_prefix }}-$(date --utc '+%Y-%m-%d-%H-%M-%SZ')"
         git switch -c "$BRANCH_NAME"
         git push --set-upstream origin "$BRANCH_NAME"
-        gh pr create --title "[automerge]$MESSAGE" --body "$MESSAGE\nAction triggered by @$USERNAME" --head "$BRANCH_NAME"
-        gh pr merge --auto --rebase
+        gh pr create --title "$MESSAGE" --body "$MESSAGE\nAction triggered by @$USERNAME" --head "$BRANCH_NAME"
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github_token }}
+    - name: Automerge with rebase
+      shell: bash
+      if: inputs.automerge == 'true'
+      run: |
+        gh pr merge --auto --rebase
