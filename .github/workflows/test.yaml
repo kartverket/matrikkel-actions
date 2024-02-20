@@ -24,7 +24,7 @@ jobs:
           # Update replicas
           echo '${{ inputs.replicas }}' >> src/replicas
           git add src/replicas
-      - uses: ./.github/actions/create-pr
+      - uses: ./create-pr
         with:
           github_token: ${{ github.token }}
           commit_message: "Scale replicas to ${{ inputs.replicas }}"
