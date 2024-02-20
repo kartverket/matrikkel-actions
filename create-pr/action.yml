@@ -41,3 +41,5 @@ runs:
       if: inputs.automerge == 'true'
       run: |
         gh pr merge --auto --rebase
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
