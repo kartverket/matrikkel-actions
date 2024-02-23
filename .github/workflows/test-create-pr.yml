@@ -1,0 +1,37 @@
+name: Test worflow on test-main
+
+on:
+  workflow_dispatch:
+    inputs:
+      replicas:
+        description: "Number of replicas"
+        required: true
+        type: number
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: test-main
+      - name: Update replicas
+        run: |
+          # Update replicas
+          echo '${{ inputs.replicas }}' > src/replicas
+          git add src/replicas
+      - uses: kartverket/matrikkel-actions/create-pr@main
+        with:
+          github_token: ${{ github.token }}
+          commit_message: "Scale replicas to ${{ inputs.replicas }}"
+          branch_name_prefix: "action/update-replicas"
+          base_branch: test-main
+          automerge: true
+
+          
