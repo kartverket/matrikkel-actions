@@ -1,0 +1,38 @@
+# nonk8s
+apiVersion: "backstage.io/v1alpha1"
+kind: "Component"
+metadata:
+  name: "matrikkel-actions"
+  tags:
+  - "internal"
+spec:
+  type: "ops"
+  lifecycle: "production"
+  owner: "heimdall"
+  system: "matrikkel"
+---
+apiVersion: "backstage.io/v1alpha1"
+kind: "Group"
+metadata:
+  name: "security_champion_matrikkel-actions"
+  title: "Security Champion matrikkel-actions"
+spec:
+  type: "security_champion"
+  parent: "eiendom_security_champions"
+  members:
+  - "okpedersen"
+  children:
+  - "resource:matrikkel-actions"
+---
+apiVersion: "backstage.io/v1alpha1"
+kind: "Resource"
+metadata:
+  name: "matrikkel-actions"
+  links:
+  - url: "https://github.com/kartverket/matrikkel-actions"
+    title: "matrikkel-actions på GitHub"
+spec:
+  type: "repo"
+  owner: "security_champion_matrikkel-actions"
+  dependencyOf:
+  - "component:matrikkel-actions"
