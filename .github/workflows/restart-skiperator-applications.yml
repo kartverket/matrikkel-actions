@@ -1,12 +1,102 @@
-name: Reusable workflow for restarting skiperator applications
+name: Reusable workflow for restarting Skiperator applications
 
 
 on:
   workflow_dispatch:
+    inputs:
+      namespace:
+        description: "Namespace to restart applications in"
+        type: string
+        required: true
+      apps:
+        description: "Comma-separated list of application names. E.g., 'app1,app2,app3'"
+        type: string
+        required: true
+      environment:
+        description: "The ATKV3 environment (dev/prod)"
+        type: environment
+        required: true
+  workflow_call:
+    inputs:
+      namespace:
+        description: "Namespace to restart applications in"
+        type: string
+        required: true
+      apps:
+        description: "Comma-separated list of application names. E.g., 'app1,app2,app3'"
+        type: string
+        required: true
+      environment:
+        description: "The ATKV3 environment (dev/prod)"
+        type: string
+        required: true
+
+    secrets:
+      TS_OAUTH_CLIENT_ID:
+        description: "Tailscale OAuth client ID"
+        required: true
+      TS_OAUTH_SECRET:
+        description: "Tailscale OAuth client ID"
+        required: true
+      ARGOCD_API_TOKEN:
+        description: "ArgoCD API token"
+        required: true
 
 jobs:
-  create_pr:
+  restart_applications:
+    environment: ${{ inputs.environment }}
+    name: "Restart applications"
     runs-on: ubuntu-latest
+    env:
+      ARGO_APPLICATION: "atkv3-${{ inputs.namespace }}"
+      APPS: ${{ inputs.apps }}
+      ARGO_SERVER: "argo-${{ inputs.environment }}.kartverket.dev"
     steps:
-      - name: Hello world
-        run: echo "Hello world"
+      - name: Install argocd CLI
+        # Docs: https://argo-cd.readthedocs.io/en/stable/cli_installation/#download-with-curl
+        # TODO: Caching
+        # TODO: ArgoCD CLI versioning
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github-runner
+
+      - name: Restart and sync Skiperator applications
+        shell: bash
+        run: |
+          IFS=',' read -r -a PARSED_APPS <<< "$APPS"
+          for app in "${PARSED_APPS[@]}"; do
+            # Restart by running 'Stop' action (case-sensitive)
+            # NOTE! This will stop the applications immediately, no rolling release
+            argocd \
+              --auth-token='${{ secrets.ARGOCD_API_TOKEN }}' \
+              --server="$ARGO_SERVER" \
+              --grpc-web \
+              app actions run "$ARGO_APPLICATION" \
+              Stop \
+              --kind Application \
+              --resource-name "$app"
+
+          done
+
+          # Start apps again by running sync, this is not necessary in all envs but included just in case
+          # This might fail if an operation is already in progress (e.g., by self-healing)
+          argocd \
+            --auth-token='${{ secrets.ARGOCD_API_TOKEN }}' \
+            --server="$ARGO_SERVER" \
+            --grpc-web \
+            app sync "$ARGO_APPLICATION" --async || true
+
+          # Wait for healthy
+          argocd \
+            --auth-token='${{ secrets.ARGOCD_API_TOKEN }}' \
+            --server="$ARGO_SERVER" \
+            --grpc-web \
+            app wait "$ARGO_APPLICATION" --health
