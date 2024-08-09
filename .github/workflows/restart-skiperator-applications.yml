@@ -1,0 +1,12 @@
+name: Reusable workflow for restarting skiperator applications
+
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello world
+        run: echo "Hello world"
