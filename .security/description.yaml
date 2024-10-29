@@ -1,4 +1,3 @@
-version: 3.0
 organization: Eiendom # Verdier: [Eiendom|Sjø|Land|Geodesi|IT|Plattform]
 product: matrikkel
 repo_types:           # Repo som primært inneholder ...
