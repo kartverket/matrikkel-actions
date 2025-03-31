@@ -1,4 +1,5 @@
-organization: Eiendom # Verdier: [Eiendom|Sjø|Land|Geodesi|IT|Plattform]
-product: matrikkel
-repo_types:           # Repo som primært inneholder ...
-  - Ops               # ... konfigurasjon, script etc for bygg, deploy og drift
+organization: Eiendom
+product: Matrikkel
+visibility: [internal]
+repo_types: [Ops]
+platforms: []
