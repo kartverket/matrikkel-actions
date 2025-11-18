@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import {require, requireNotNullOrEmpty, Serde} from "./fn-utils.ts";
+import {groupBy, require, requireNotNullOrEmpty, Serde, unique} from "./fn-utils.ts";
 
 export function fatal(message: string): never {
     core.error(message);
@@ -57,3 +57,24 @@ export const AppDeployDescriptorSerde : Serde<AppDeployDescriptor> = new Serde(
         return { cluster, namespace, appname, version };
     }
 );
+
+export type UpdateEntry = AppDeployDescriptor & { originalVersion: string };
+
+export function createCommitMessage(entries: UpdateEntry[]): [string, string] {
+    const joiner = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+    const env = unique(entries.map(it => `${it.cluster}:${it.namespace}`));
+    const appnames = joiner.format(unique(entries.map(it => it.appname)));
+
+    const summary = `Updated ${appnames} across ${env.length} environment(s)`
+    const description: string[] = [];
+    const apps = groupBy(entries, it => it.appname);
+    for (const [app, appEntries] of Object.entries(apps)) {
+        description.push(`Updated ${app}`)
+        for (const entry of appEntries) {
+            description.push(`${entry.cluster}:${entry.namespace}: ${entry.originalVersion} -> ${entry.version}`)
+        }
+        description.push('')
+    }
+
+    return [summary, description.join('\n')];
+}

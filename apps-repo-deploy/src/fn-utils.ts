@@ -40,3 +40,17 @@ export class Serde<T> {
         return this.reverseGet(value);
     }
 }
+
+export function unique<T>(list: T[]): T[] {
+    return Array.from(new Set(list));
+}
+
+export function groupBy<T>(list: T[], fn: (t: T) => string): Record<string, T[]> {
+    return list.reduce((acc, element) => {
+        const key = fn(element);
+        const group = acc[key] ?? [];
+        group.push(element);
+        acc[key] = group;
+        return acc;
+    }, {} as Record<string, T[]>)
+}

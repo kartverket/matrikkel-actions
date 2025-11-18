@@ -6,7 +6,9 @@ import {
     type AppDeployDescriptor,
     fatal,
     ImageDescriptorSerde,
-    versionPathForApp
+    versionPathForApp,
+    type UpdateEntry,
+    createCommitMessage
 } from "./utils.ts";
 import {require} from "./fn-utils.ts";
 
@@ -29,6 +31,8 @@ if (apps.length === 0) {
     fatal(`No apps to deploy`);
 }
 
+const updateLog: UpdateEntry[] = [];
+
 for (const app of apps) {
     const versionFilePath = versionPathForApp(app);
     const versionFile = Bun.file(versionFilePath);
@@ -40,13 +44,17 @@ for (const app of apps) {
     const newImageDescriptor = {...imageDescriptor, version: app.version};
     const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
 
-    if (!isDryrun) {
+    if (!isDryrun && imageDescriptorStr !== newImageDescriptorStr) {
         // Atomic writes, to prevent partially written files
         const tmpFile = `${versionFilePath}.tmp`;
         await Bun.write(tmpFile, newImageDescriptorStr);
         await fs.rename(tmpFile, versionFilePath);
     }
-    core.info(`${logprefix}Updated version ${versionFilePath}: ${imageDescriptorStr} -> ${newImageDescriptorStr}`);
+
+    updateLog.push({ ...app, originalVersion: imageDescriptor.version })
+    core.info(`${logprefix}Updating ${versionFilePath}`);
+    core.info(`${logprefix}${imageDescriptorStr} -> ${newImageDescriptorStr}`);
+    core.info('');
 }
 
 const hasChanges = (await $`git diff --quiet || echo changed`.text()).includes("changed");
@@ -58,7 +66,8 @@ if (!hasChanges) {
     try {
         await $`git config user.name "Heimdall CI"`;
         await $`git config user.email "spam@kartverket.no"`;
-        await $`git commit -am "Updated ${apps.length} versions" -m "versions: ${appsString}"`;
+        const [summary, description] = createCommitMessage(updateLog);
+        await $`git commit -am "${summary}" -m "${description}" -m "initial config:\n${appsString}"`;
         await $`git fetch origin main`;
         await $`git rebase origin/main`;
         await $`git push origin main`;
