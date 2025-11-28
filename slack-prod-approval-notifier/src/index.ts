@@ -3,7 +3,7 @@ import {
     type ApprovalState,
     type ApprovalStatus,
     getApprovers,
-    LaFLUT,
+    LaFLUT, type OctoUser,
     postMessage,
     updateMessage
 } from "./utils.js";
@@ -49,7 +49,7 @@ async function run() {
         }
         const messageId = core.getInput('messageId', { required: false });
 
-        const approvers = await getApprovers(octokit);
+        const approvers: OctoUser[] = [];//await getApprovers(octokit);
         if (approvers.length > 0) {
             state.approver = approvers[0]!.login;
         }

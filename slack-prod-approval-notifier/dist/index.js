@@ -40030,17 +40030,6 @@ function buildMessage(channel, state) {
     ]
   };
 }
-async function getApprovers(octokit) {
-  const approverResponse = await octokit.request("GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals", {
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    run_id: github.context.runId,
-    headers: {
-      "X-GitHub-Api-Version": "2025-11-28"
-    }
-  });
-  return approverResponse.data;
-}
 
 // src/index.ts
 var import_web_api = __toESM(require_dist4(), 1);
@@ -40079,7 +40068,7 @@ async function run() {
       commits: []
     };
     const messageId = core.getInput("messageId", { required: false });
-    const approvers = await getApprovers(octokit);
+    const approvers = [];
     if (approvers.length > 0) {
       state.approver = approvers[0].login;
     }
