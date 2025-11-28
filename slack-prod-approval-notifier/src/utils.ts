@@ -99,7 +99,7 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
             repo: github.context.repo.repo,
             run_id: github.context.runId,
             headers: {
-                "X-GitHub-Api-Version": "2025-11-28",
+                "X-GitHub-Api-Version": "2022-11-28",
             },
         }
     );

@@ -54,7 +54,7 @@ async function run() {
             commits: [] // TODO(Ignore for now, would have to parse content in apps-repo to get the previous version)
         }
 
-        const approvers: OctoUser[] = [];//await getApprovers(octokit);
+        const approvers = await getApprovers(octokit);
         if (approvers.length > 0) {
             state.approver = approvers[0]!.login;
         }
