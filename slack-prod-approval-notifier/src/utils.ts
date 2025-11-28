@@ -1,6 +1,7 @@
 import type { WebClient } from "@slack/web-api";
 import type {AnyBlock, ContextBlockElement} from "@slack/types/dist/block-kit/blocks";
 import type {GitHub} from "@actions/github/lib/utils";
+import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'CANCELLED';
@@ -89,7 +90,7 @@ function buildMessage(channel: string, state: ApprovalState) {
     }
 }
 
-export type OctoUser = { login: string; html_url: string; }
+export type OctoUser = { user: { login: string; html_url: string; } };
 
 export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promise<OctoUser[]> {
     const approverResponse = await octokit.request(
@@ -103,5 +104,7 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
             },
         }
     );
+
+    core.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
     return approverResponse.data as unknown as OctoUser[];
 }

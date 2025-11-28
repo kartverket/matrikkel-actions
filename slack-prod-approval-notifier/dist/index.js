@@ -33224,17 +33224,17 @@ var require_proxy_from_env = __commonJS((exports) => {
 
 // node_modules/follow-redirects/debug.js
 var require_debug = __commonJS((exports, module) => {
-  var debug;
+  var debug2;
   module.exports = function() {
-    if (!debug) {
+    if (!debug2) {
       try {
-        debug = (()=>{throw new Error("Cannot require module "+"debug");})()("follow-redirects");
+        debug2 = (()=>{throw new Error("Cannot require module "+"debug");})()("follow-redirects");
       } catch (error) {}
-      if (typeof debug !== "function") {
-        debug = function() {};
+      if (typeof debug2 !== "function") {
+        debug2 = function() {};
       }
     }
-    debug.apply(null, arguments);
+    debug2.apply(null, arguments);
   };
 });
 
@@ -33246,7 +33246,7 @@ var require_follow_redirects = __commonJS((exports, module) => {
   var https = __require("https");
   var Writable = __require("stream").Writable;
   var assert = __require("assert");
-  var debug = require_debug();
+  var debug2 = require_debug();
   (function detectUnsupportedEnvironment() {
     var looksLikeNode = typeof process !== "undefined";
     var looksLikeBrowser = typeof window !== "undefined" && typeof document !== "undefined";
@@ -33537,7 +33537,7 @@ var require_follow_redirects = __commonJS((exports, module) => {
     var currentHost = currentHostHeader || currentUrlParts.host;
     var currentUrl = /^\w+:/.test(location) ? this._currentUrl : url.format(Object.assign(currentUrlParts, { host: currentHost }));
     var redirectUrl = resolveUrl(location, currentUrl);
-    debug("redirecting to", redirectUrl.href);
+    debug2("redirecting to", redirectUrl.href);
     this._isRedirect = true;
     spreadUrlObject(redirectUrl, this._options);
     if (redirectUrl.protocol !== currentUrlParts.protocol && redirectUrl.protocol !== "https:" || redirectUrl.host !== currentHost && !isSubdomain(redirectUrl.host, currentHost)) {
@@ -33591,7 +33591,7 @@ var require_follow_redirects = __commonJS((exports, module) => {
           options.hostname = "::1";
         }
         assert.equal(options.protocol, protocol, "protocol mismatch");
-        debug("options", options);
+        debug2("options", options);
         return new RedirectableRequest(options, callback);
       }
       function get(input, options, callback) {
@@ -39961,9 +39961,10 @@ var require_dist4 = __commonJS((exports) => {
 });
 
 // src/index.ts
-var core = __toESM(require_core(), 1);
+var core2 = __toESM(require_core(), 1);
 
 // src/utils.ts
+var core = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
 var LaFLUT = {
   AWAITING: { icon: ":hourglass_flowing_sand:", color: "#B0BEC5", text: "Awaiting approval" },
@@ -40040,6 +40041,7 @@ async function getApprovers(octokit) {
       "X-GitHub-Api-Version": "2022-11-28"
     }
   });
+  core.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
   return approverResponse.data;
 }
 
@@ -40047,45 +40049,45 @@ async function getApprovers(octokit) {
 var import_web_api = __toESM(require_dist4(), 1);
 var github2 = __toESM(require_github(), 1);
 function readStatus() {
-  const status = core.getInput("status", { required: false }) || "AWAITING";
+  const status = core2.getInput("status", { required: false }) || "AWAITING";
   if (Object.keys(LaFLUT).includes(status)) {
     return status;
   }
   if (Object.keys(LaFLUT).includes(status.toUpperCase())) {
     return status.toUpperCase();
   }
-  core.setFailed(`Invalid status: ${status}`);
+  core2.setFailed(`Invalid status: ${status}`);
   process.exit(1);
 }
 async function run() {
   try {
-    const messageId = core.getInput("messageId", { required: false });
+    const messageId = core2.getInput("messageId", { required: false });
     const isUpdateStep = messageId !== "";
-    const isPostStep = core.getState("is_post") == "true";
-    core.saveState("is_post", "true");
+    const isPostStep = core2.getState("is_post") == "true";
+    core2.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
     if (!token) {
-      core.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
+      core2.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
       return;
     }
     const client = new import_web_api.WebClient(token);
     const ghToken = process.env.GITHUB_TOKEN;
     if (!ghToken) {
-      core.setFailed("Could not find github token environment variable (env: GITHUB_TOKEN).");
+      core2.setFailed("Could not find github token environment variable (env: GITHUB_TOKEN).");
       return;
     }
     const octokit = github2.getOctokit(ghToken);
-    const channel = core.getInput("channel", { required: true });
+    const channel = core2.getInput("channel", { required: true });
     const state = {
-      environment: core.getInput("environment", { required: true }),
-      version: core.getInput("version", { required: true }),
+      environment: core2.getInput("environment", { required: true }),
+      version: core2.getInput("version", { required: true }),
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       approver: "",
       commits: []
     };
     const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
-      state.approver = approvers[0].login;
+      state.approver = approvers[0].user.login;
     }
     let newMessageId;
     if (messageId) {
@@ -40095,9 +40097,9 @@ async function run() {
       const { ts } = await postMessage(client, channel, state);
       newMessageId = ts;
     }
-    core.setOutput("messageId", newMessageId);
+    core2.setOutput("messageId", newMessageId);
   } catch (error) {
-    core.setFailed(error instanceof Error ? error.message : String(error));
+    core2.setFailed(error instanceof Error ? error.message : String(error));
   }
 }
 await run();
