@@ -40046,7 +40046,7 @@ async function getApprovers(octokit) {
 var import_web_api = __toESM(require_dist4(), 1);
 var github2 = __toESM(require_github(), 1);
 function readStatus() {
-  const status = core.getInput("status", { required: false }) ?? "AWAITING";
+  const status = core.getInput("status", { required: false }) || "AWAITING";
   if (Object.keys(LaFLUT).includes(status)) {
     return status;
   }

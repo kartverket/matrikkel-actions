@@ -11,7 +11,7 @@ import {WebClient} from "@slack/web-api";
 import * as github from "@actions/github";
 
 function readStatus(): ApprovalStatus {
-    const status = core.getInput('status', {required: false}) ?? 'AWAITING';
+    const status = core.getInput('status', {required: false}) || 'AWAITING';
     if (Object.keys(LaFLUT).includes(status)) {
         return status as ApprovalStatus;
     }
