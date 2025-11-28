@@ -25,17 +25,20 @@ function readStatus(): ApprovalStatus {
 
 async function run() {
     try {
+        const isPostStep = core.getState('is_post') == 'true';
+        core.saveState('is_post', 'true');
+
         const token = process.env.SLACK_BOT_TOKEN;
         if (!token) {
             core.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
-            process.exit(1);
+            return;
         }
         const client = new WebClient(token);
 
         const ghToken = process.env.GITHUB_TOKEN;
         if (!ghToken) {
             core.setFailed('Could not find github token environment variable (env: GITHUB_TOKEN).')
-            process.exit(1)
+            return;
         }
         const octokit = github.getOctokit(ghToken)
 
@@ -43,7 +46,7 @@ async function run() {
         const state: ApprovalState = {
             environment: core.getInput('environment', {required: true}),
             version: core.getInput('version', {required: true}),
-            status: readStatus(),
+            status: isPostStep ? readStatus() : 'RUNNING',
             approver: '', // Never set during setup
             commits: [] // TODO(Ignore for now, would have to parse content in apps-repo to get the previous version)
         }

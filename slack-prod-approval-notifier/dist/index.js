@@ -39966,10 +39966,11 @@ var core = __toESM(require_core(), 1);
 // src/utils.ts
 var github = __toESM(require_github(), 1);
 var LaFLUT = {
-  AWAITING: { icon: ":hourglass_flowing_sand:", color: "#757575", text: "Awaiting approval" },
-  RUNNING: { icon: ":rocket:", color: "#FFEA00", text: "Deploying" },
-  SUCCESS: { icon: ":white_check_mark:", color: "#00ff00", text: "Success" },
-  FAILURE: { icon: ":x:", color: "#ff0000", text: "Failure" }
+  AWAITING: { icon: ":hourglass_flowing_sand:", color: "#B0BEC5", text: "Awaiting approval" },
+  RUNNING: { icon: ":rocket:", color: "#42A5F5", text: "Deploying" },
+  SUCCESS: { icon: ":white_check_mark:", color: "#2E7D32", text: "Success" },
+  FAILURE: { icon: ":x:", color: "#D32F2F", text: "Failure" },
+  CANCELLED: { icon: ":stop_sign:", color: "#F6C344", text: "Cancelled" }
 };
 async function postMessage(client, channel, state) {
   const response = await client.chat.postMessage(buildMessage(channel, state));
@@ -40047,23 +40048,25 @@ function readStatus() {
 }
 async function run() {
   try {
+    const isPostStep = core.getState("is_post") == "true";
+    core.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
     if (!token) {
       core.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
-      process.exit(1);
+      return;
     }
     const client = new import_web_api.WebClient(token);
     const ghToken = process.env.GITHUB_TOKEN;
     if (!ghToken) {
       core.setFailed("Could not find github token environment variable (env: GITHUB_TOKEN).");
-      process.exit(1);
+      return;
     }
     const octokit = github2.getOctokit(ghToken);
     const channel = core.getInput("channel", { required: true });
     const state = {
       environment: core.getInput("environment", { required: true }),
       version: core.getInput("version", { required: true }),
-      status: readStatus(),
+      status: isPostStep ? readStatus() : "RUNNING",
       approver: "",
       commits: []
     };

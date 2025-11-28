@@ -1,0 +1,60 @@
+name: slack-ci-test.yml
+on:
+  workflow_dispatch:
+
+env:
+  CI: true
+  TZ: Europe/Oslo
+  SLACK_CHANNEL: C09V5AXA4R5
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-prod-notifier:
+    name: Slack notification (Setup)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/ci-report'
+    outputs:
+      messageId: ${{ steps.slack_notify.outputs.messageId }}
+    steps:
+      - name: Notify slack (Setup)
+        id: slack_notify
+        uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/setup@feat/slack-notifier-action
+        with:
+          channel: ${{ env.SLACK_CHANNEL }}
+          environment: 'produksjon'
+          version: 1.2.3-beta
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  deploy-prod:
+    name: Deploy Prod
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/ci-report'
+    needs: deploy-prod-notifier
+    environment:
+      name: production
+    steps:
+      - name: Notify slack (Update)
+        uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/update@feat/slack-notifier-action
+        with:
+          channel: ${{ env.SLACK_CHANNEL }}
+          environment: 'production'
+          version: 1.2.3-beta
+          messageId: ${{ needs.deploy-prod-notifier.outputs.messageId }}
+          status: ${{ job.status }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name:  Deploy Prod
+        shell: bash
+        run: |
+          sleep 10
+          echo " Deploy Prod"

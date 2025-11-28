@@ -3,7 +3,7 @@ import type {AnyBlock, ContextBlockElement} from "@slack/types/dist/block-kit/bl
 import type {GitHub} from "@actions/github/lib/utils";
 import * as github from "@actions/github";
 
-export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE';
+export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'CANCELLED';
 export type ApprovalState = {
     status: ApprovalStatus;
     version: string;
@@ -14,10 +14,11 @@ export type ApprovalState = {
 
 export type LaF = { icon: string; color: string; text: string; }
 export const LaFLUT: Record<ApprovalStatus, LaF> = {
-    AWAITING: {icon: ':hourglass_flowing_sand:', color: '#757575', text: 'Awaiting approval'},
-    RUNNING: {icon: ':rocket:', color: '#FFEA00', text: 'Deploying'},
-    SUCCESS: {icon: ':white_check_mark:', color: '#00ff00', text: 'Success'},
-    FAILURE: {icon: ':x:', color: '#ff0000', text: 'Failure'},
+    AWAITING: {icon: ':hourglass_flowing_sand:', color: '#B0BEC5', text: 'Awaiting approval'},
+    RUNNING: {icon: ':rocket:', color: '#42A5F5', text: 'Deploying'},
+    SUCCESS: {icon: ':white_check_mark:', color: '#2E7D32', text: 'Success'},
+    FAILURE: {icon: ':x:', color: '#D32F2F', text: 'Failure'},
+    CANCELLED: {icon: ':stop_sign:', color: '#F6C344', text: 'Cancelled'},
 }
 
 export async function postMessage(client: WebClient, channel: string, state: ApprovalState) {
