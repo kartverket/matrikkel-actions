@@ -1,4 +1,12 @@
-name: slack-ci-test.yml
+# slack-prod-approval-notifier
+
+Custom github action to post notification to slack to get approvals to deployments
+
+## Usage
+
+In your application repository:
+```yaml
+name: Example
 on:
   workflow_dispatch:
 
@@ -6,10 +14,8 @@ env:
   CI: true
   TZ: Europe/Oslo
   SLACK_CHANNEL: C09V5AXA4R5
-
-permissions:
-  contents: read
-  actions: read
+  ENVIRONMENT: production
+  APP_VERSION: 1.2.3
 
 defaults:
   run:
@@ -19,7 +25,6 @@ jobs:
   deploy-prod-notifier:
     name: Slack notification (Setup)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ci-report'
     outputs:
       messageId: ${{ steps.slack_notify.outputs.messageId }}
     steps:
@@ -28,25 +33,25 @@ jobs:
         uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/setup@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
-          environment: 'produksjon'
-          version: 1.2.3-beta
+          environment: ${{ env.ENVIRONMENT }}
+          version: ${{ env.APP_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   deploy-prod:
     name: Deploy Prod
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/ci-report'
     needs: deploy-prod-notifier
     environment:
-      name: production
+      name: production # guard which requires approval
     steps:
       - name: Notify slack (Update)
+        # This "update" action has a post-step reporting the final state of your action
         uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/update@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
-          environment: 'production'
-          version: 1.2.3-beta
+          environment: ${{ env.ENVIRONMENT }}
+          version: ${{ env.APP_VERSION }}
           messageId: ${{ needs.deploy-prod-notifier.outputs.messageId }}
           status: ${{ job.status }}
         env:
@@ -58,3 +63,4 @@ jobs:
         run: |
           sleep 10
           echo " Deploy Prod"
+```

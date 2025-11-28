@@ -50,8 +50,7 @@ async function run() {
             environment: core.getInput('environment', {required: true}),
             version: core.getInput('version', {required: true}),
             status: isPostStep ? readStatus() : (isUpdateStep ? 'RUNNING' : 'AWAITING'),
-            approver: '', // Never set during setup
-            commits: [] // TODO(Ignore for now, would have to parse content in apps-repo to get the previous version)
+            commits: [] // Ignore for now, would have to parse content in apps-repo to get the previous version, and find a diff
         }
 
         const approvers = await getApprovers(octokit);
