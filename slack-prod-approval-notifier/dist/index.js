@@ -40036,7 +40036,7 @@ function buildMessage(channel, state) {
 var import_web_api = __toESM(require_dist4(), 1);
 var github2 = __toESM(require_github(), 1);
 function readStatus() {
-  const status = core.getInput("status", { required: false }) || "AWAITING";
+  const status = core.getInput("status", { required: false }) || "FAILURE";
   if (Object.keys(LaFLUT).includes(status)) {
     return status;
   }
@@ -40066,7 +40066,7 @@ async function run() {
     const state = {
       environment: core.getInput("environment", { required: true }),
       version: core.getInput("version", { required: true }),
-      status: isPostStep ? readStatus() : "RUNNING",
+      status: isPostStep ? readStatus() : "AWAITING",
       approver: "",
       commits: []
     };
