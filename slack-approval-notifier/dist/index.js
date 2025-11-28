@@ -40082,7 +40082,6 @@ async function run() {
       environment: core2.getInput("environment", { required: true }),
       version: core2.getInput("version", { required: true }),
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
-      approver: "",
       commits: []
     };
     const approvers = await getApprovers(octokit);

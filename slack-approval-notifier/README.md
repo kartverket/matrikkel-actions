@@ -1,4 +1,4 @@
-# slack-prod-approval-notifier
+# slack-approval-notifier
 
 Custom github action to post notification to slack to get approvals to deployments
 
@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Notify slack (Setup)
         id: slack_notify
-        uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/setup@feat/slack-notifier-action
+        uses: kartverket/matrikkel-actions/slack-approval-notifier/setup@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Notify slack (Update)
         # This "update" action has a post-step reporting the final state of your action
-        uses: kartverket/matrikkel-actions/slack-prod-approval-notifier/update@feat/slack-notifier-action
+        uses: kartverket/matrikkel-actions/slack-approval-notifier/update@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
