@@ -40036,7 +40036,7 @@ function buildMessage(channel, state) {
 var import_web_api = __toESM(require_dist4(), 1);
 var github2 = __toESM(require_github(), 1);
 function readStatus() {
-  const status = core.getInput("status", { required: false }) || "FAILURE";
+  const status = core.getInput("status", { required: false }) || "AWAITING";
   if (Object.keys(LaFLUT).includes(status)) {
     return status;
   }
@@ -40048,6 +40048,8 @@ function readStatus() {
 }
 async function run() {
   try {
+    const messageId = core.getInput("messageId", { required: false });
+    const isUpdateStep = messageId !== "";
     const isPostStep = core.getState("is_post") == "true";
     core.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
@@ -40066,11 +40068,10 @@ async function run() {
     const state = {
       environment: core.getInput("environment", { required: true }),
       version: core.getInput("version", { required: true }),
-      status: isPostStep ? readStatus() : "AWAITING",
+      status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       approver: "",
       commits: []
     };
-    const messageId = core.getInput("messageId", { required: false });
     const approvers = [];
     if (approvers.length > 0) {
       state.approver = approvers[0].login;

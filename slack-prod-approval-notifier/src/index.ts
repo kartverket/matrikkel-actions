@@ -11,7 +11,7 @@ import {WebClient} from "@slack/web-api";
 import * as github from "@actions/github";
 
 function readStatus(): ApprovalStatus {
-    const status = core.getInput('status', {required: false}) || 'FAILURE';
+    const status = core.getInput('status', {required: false}) || 'AWAITING';
     if (Object.keys(LaFLUT).includes(status)) {
         return status as ApprovalStatus;
     }
@@ -25,6 +25,9 @@ function readStatus(): ApprovalStatus {
 
 async function run() {
     try {
+        const messageId = core.getInput('messageId', { required: false });
+        const isUpdateStep = messageId !== '';
+
         const isPostStep = core.getState('is_post') == 'true';
         core.saveState('is_post', 'true');
 
@@ -46,11 +49,10 @@ async function run() {
         const state: ApprovalState = {
             environment: core.getInput('environment', {required: true}),
             version: core.getInput('version', {required: true}),
-            status: isPostStep ? readStatus() : 'AWAITING',
+            status: isPostStep ? readStatus() : (isUpdateStep ? 'RUNNING' : 'AWAITING'),
             approver: '', // Never set during setup
             commits: [] // TODO(Ignore for now, would have to parse content in apps-repo to get the previous version)
         }
-        const messageId = core.getInput('messageId', { required: false });
 
         const approvers: OctoUser[] = [];//await getApprovers(octokit);
         if (approvers.length > 0) {
