@@ -99,7 +99,7 @@ async function run() {
             core.saveState('commits', JSON.stringify(state.commits));
         }
 
-        const approvers = isPostStep ? [] : await getApprovers(octokit);
+        const approvers = await getApprovers(octokit);
         if (approvers.length > 0) {
             state.approver = approvers[0]!.user.login;
         }

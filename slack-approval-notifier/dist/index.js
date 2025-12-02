@@ -40228,7 +40228,7 @@ async function run() {
       state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepoDescriptor);
       core2.saveState("commits", JSON.stringify(state.commits));
     }
-    const approvers = isPostStep ? [] : await getApprovers(octokit);
+    const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
     }
