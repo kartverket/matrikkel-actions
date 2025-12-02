@@ -88,7 +88,13 @@ describe('serde', () => {
         (p) => `${p.name},${p.age}`,
         (s) => {
             const [name, age] = s.split(',');
-            return {name, age: parseInt(age)};
+            requireNotNull(name);
+            requireNotNull(age);
+            
+            return {
+                name: name,
+                age: parseInt(age)
+            };
         }
     );
 

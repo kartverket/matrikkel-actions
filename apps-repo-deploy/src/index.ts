@@ -2,15 +2,13 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {
-    AppDeployDescriptorSerde,
-    type AppDeployDescriptor,
     fatal,
-    ImageDescriptorSerde,
-    versionPathForApp,
     type UpdateEntry,
     createCommitMessage
 } from "./utils.ts";
-import {require} from "./fn-utils.ts";
+import { AppDeployDescriptorSerde, type AppDeployDescriptor, ImageDescriptorSerde } from '../../utils/common-types.ts';
+import {require} from "../../utils/fn-utils.ts";
+import {versionPathForApp} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
