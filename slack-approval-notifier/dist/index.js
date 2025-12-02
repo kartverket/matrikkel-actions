@@ -39966,6 +39966,69 @@ var core2 = __toESM(require_core(), 1);
 // src/utils.ts
 var core = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
+
+// ../utils/fn-utils.ts
+function require2(value, message = () => "Value is required to be true") {
+  if (!value)
+    throw new Error(message());
+}
+function requireNotNullOrEmpty(value) {
+  requireNotNull(value);
+  requireNotEmpty(value);
+}
+function requireNotNull(value, message = () => "Value cannot be null-ish") {
+  require2(value != null, message);
+}
+function requireNotEmpty(value, message = () => "Value cannot be empty") {
+  require2(value.trim().length > 0, message);
+}
+
+class Serde {
+  get;
+  reverseGet;
+  constructor(get, reverseGet) {
+    this.get = get;
+    this.reverseGet = reverseGet;
+  }
+  serialize(value) {
+    return this.get(value);
+  }
+  deserialize(value) {
+    return this.reverseGet(value);
+  }
+}
+
+// ../utils/utils.ts
+function trimQuotes(value) {
+  return value.replace(/^["']|["']$/g, "");
+}
+function versionPathForApp(descriptor) {
+  return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}/${descriptor.appname}-version`;
+}
+
+// ../utils/common-types.ts
+var ImageDescriptorSerde = new Serde((descriptor) => {
+  return `"${descriptor.name}:${descriptor.version}"`;
+}, (descriptor) => {
+  const fragments = trimQuotes(descriptor.trim()).split(":");
+  const name = fragments.slice(0, -1).join(":");
+  const version = fragments[fragments.length - 1];
+  requireNotNullOrEmpty(name);
+  requireNotNullOrEmpty(version);
+  return { name, version };
+});
+var AppDeployDescriptorSerde = new Serde((descriptor) => `${descriptor.cluster}:${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`, (descriptor) => {
+  const fragments = descriptor.split(":").map((it) => it.trim());
+  require2(fragments.length === 4, () => `Invalid descriptor: ${descriptor}`);
+  const [cluster, namespace, appname, version] = fragments;
+  requireNotNullOrEmpty(cluster);
+  requireNotNullOrEmpty(namespace);
+  requireNotNullOrEmpty(appname);
+  requireNotNullOrEmpty(version);
+  return { cluster, namespace, appname, version };
+});
+
+// src/utils.ts
 var LaFLUT = {
   AWAITING: { icon: ":hourglass_flowing_sand:", color: "#B0BEC5", text: "Awaiting approval" },
   RUNNING: { icon: ":rocket:", color: "#42A5F5", text: "Deploying" },
@@ -40044,6 +40107,52 @@ async function getApprovers(octokit) {
   core.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
   return approverResponse.data;
 }
+async function getCurrentVersionFromAppsRepo(octokit, descriptor) {
+  try {
+    const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+      owner: "kartverket",
+      repo: "heimdall-apps",
+      path: versionPathForApp(descriptor),
+      ref: "main",
+      headers: {
+        Accept: "application/vnd.github.raw",
+        "X-GitHub-Api-Version": "2022-11-28"
+      }
+    });
+    const content = response.data?.toString().trim();
+    const imageDescriptor = ImageDescriptorSerde.deserialize(content);
+    core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
+    return imageDescriptor.version;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    core.warning(`Could not read current version from apps repo: ${message}`);
+    return null;
+  }
+}
+async function getCommitsBetweenVersions(octokit, base, head) {
+  if (!base || !head || base === head) {
+    return [];
+  }
+  try {
+    const compare = await octokit.rest.repos.compareCommitsWithBasehead({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      basehead: `${base}...${head}`,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28"
+      }
+    });
+    return compare.data.commits.map((commit) => ({
+      gitsha: commit.sha.slice(0, 7),
+      message: (commit.commit?.message ?? "").split(`
+`)[0].trim()
+    }));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    core.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
+    return [];
+  }
+}
 
 // src/index.ts
 var import_web_api = __toESM(require_dist4(), 1);
@@ -40058,6 +40167,21 @@ function readStatus() {
   }
   core2.setFailed(`Invalid status: ${status}`);
   process.exit(1);
+}
+function readCommitsFromState() {
+  const commitsState = core2.getState("commits");
+  if (!commitsState) {
+    return;
+  }
+  return JSON.parse(commitsState);
+}
+async function resolveCommits(octokit, descriptor) {
+  const previousVersion = await getCurrentVersionFromAppsRepo(octokit, descriptor);
+  if (!previousVersion) {
+    core2.error("Could not find previous version in production");
+    process.exit(1);
+  }
+  return getCommitsBetweenVersions(octokit, previousVersion, descriptor.version);
 }
 async function run() {
   try {
@@ -40078,12 +40202,17 @@ async function run() {
     }
     const octokit = github2.getOctokit(ghToken);
     const channel = core2.getInput("channel", { required: true });
+    const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core2.getInput("appDescriptor", { required: true }));
     const state = {
       environment: core2.getInput("environment", { required: true }),
-      version: core2.getInput("version", { required: true }),
+      version: appsRepoDescriptor.version,
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
-      commits: []
+      commits: readCommitsFromState() ?? []
     };
+    if (state.commits.length == 0) {
+      state.commits = await resolveCommits(octokit, appsRepoDescriptor);
+      core2.saveState("commits", JSON.stringify(state.commits));
+    }
     const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
@@ -40097,8 +40226,8 @@ async function run() {
       newMessageId = ts;
     }
     core2.setOutput("messageId", newMessageId);
-  } catch (error) {
-    core2.setFailed(error instanceof Error ? error.message : String(error));
+  } catch (error2) {
+    core2.setFailed(error2 instanceof Error ? error2.message : String(error2));
   }
 }
 await run();

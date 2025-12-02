@@ -3,12 +3,15 @@ import {
     type ApprovalState,
     type ApprovalStatus,
     getApprovers,
+    getCommitsBetweenVersions,
+    getCurrentVersionFromAppsRepo,
     LaFLUT,
     postMessage,
     updateMessage
 } from "./utils.js";
 import {WebClient} from "@slack/web-api";
 import * as github from "@actions/github";
+import {type AppDeployDescriptor, AppDeployDescriptorSerde} from "../../utils/common-types.ts";
 
 function readStatus(): ApprovalStatus {
     const status = core.getInput('status', {required: false}) || 'AWAITING';
@@ -21,6 +24,27 @@ function readStatus(): ApprovalStatus {
 
     core.setFailed(`Invalid status: ${status}`);
     process.exit(1);
+}
+
+function readCommitsFromState(): ApprovalState['commits'] | undefined {
+    const commitsState = core.getState('commits');
+    if (!commitsState) {
+        return undefined;
+    }
+    return JSON.parse(commitsState) as ApprovalState['commits'];
+}
+
+async function resolveCommits(
+    octokit: ReturnType<typeof github.getOctokit>,
+    descriptor: AppDeployDescriptor
+): Promise<ApprovalState['commits']> {
+    const previousVersion = await getCurrentVersionFromAppsRepo(octokit, descriptor);
+    if (!previousVersion) {
+        core.error('Could not find previous version in production');
+        process.exit(1);
+    }
+
+    return getCommitsBetweenVersions(octokit, previousVersion, descriptor.version);
 }
 
 async function run() {
@@ -46,11 +70,21 @@ async function run() {
         const octokit = github.getOctokit(ghToken)
 
         const channel = core.getInput("channel", {required: true});
+        const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core.getInput('appDescriptor', { required: true }));
+
         const state: ApprovalState = {
             environment: core.getInput('environment', {required: true}),
-            version: core.getInput('version', {required: true}),
+            version: appsRepoDescriptor.version,
             status: isPostStep ? readStatus() : (isUpdateStep ? 'RUNNING' : 'AWAITING'),
-            commits: [] // Ignore for now, would have to parse content in apps-repo to get the previous version, and find a diff
+            commits: readCommitsFromState() ?? []
+        }
+
+        if (state.commits.length == 0) {
+            state.commits = await resolveCommits(
+                octokit,
+                appsRepoDescriptor,
+            );
+            core.saveState('commits', JSON.stringify(state.commits));
         }
 
         const approvers = await getApprovers(octokit);

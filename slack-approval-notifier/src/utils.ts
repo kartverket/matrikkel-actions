@@ -3,6 +3,8 @@ import type {AnyBlock, ContextBlockElement} from "@slack/types/dist/block-kit/bl
 import type {GitHub} from "@actions/github/lib/utils";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import {type AppDeployDescriptor, ImageDescriptorSerde} from "../../utils/common-types.ts";
+import {versionPathForApp} from "../../utils/utils.ts";
 
 export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'CANCELLED';
 export type ApprovalState = {
@@ -107,4 +109,64 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
 
     core.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
     return approverResponse.data as unknown as OctoUser[];
+}
+
+export async function getCurrentVersionFromAppsRepo(
+    octokit: InstanceType<typeof GitHub>,
+    descriptor: AppDeployDescriptor,
+): Promise<string | null> {
+    try {
+        const response = await octokit.request(
+            "GET /repos/{owner}/{repo}/contents/{path}",
+            {
+                owner: 'kartverket',
+                repo: 'heimdall-apps',
+                path: versionPathForApp(descriptor),
+                ref: 'main',
+                headers: {
+                    "Accept": "application/vnd.github.raw",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                },
+            }
+        );
+
+        const content = (response.data as unknown as string)?.toString().trim();
+        const imageDescriptor = ImageDescriptorSerde.deserialize(content);
+        core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
+        return imageDescriptor.version;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        core.warning(`Could not read current version from apps repo: ${message}`);
+        return null;
+    }
+}
+
+export async function getCommitsBetweenVersions(
+    octokit: InstanceType<typeof GitHub>,
+    base: string,
+    head: string
+): Promise<ApprovalState['commits']> {
+    if (!base || !head || base === head) {
+        return [];
+    }
+
+    try {
+        const compare = await octokit.rest.repos.compareCommitsWithBasehead({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            basehead: `${base}...${head}`,
+            headers: {
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        });
+
+        return compare.data.commits.map(commit => ({
+            gitsha: commit.sha.slice(0, 7),
+            message: (commit.commit?.message ?? '').split('\n')[0]!.trim(),
+        }));
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        core.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
+        return [];
+    }
 }

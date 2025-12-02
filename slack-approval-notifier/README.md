@@ -34,7 +34,7 @@ jobs:
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
-          version: ${{ env.APP_VERSION }}
+          appDescriptor: atkv3-prod:matrikkel-nd:matrikkel-app:${{ env.APP_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
-          version: ${{ env.APP_VERSION }}
+          appDescriptor: atkv3-prod:matrikkel-nd:matrikkel-app:${{ env.APP_VERSION }}
           messageId: ${{ needs.deploy-prod-notifier.outputs.messageId }}
           status: ${{ job.status }}
         env:

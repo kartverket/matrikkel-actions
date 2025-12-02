@@ -14,8 +14,8 @@ inputs:
   environment:
     description: "Environment the deployment is meant for"
     required: true
-  version:
-    description: "Version of deployment"
+  appDescriptor:
+    description: "App descriptor used to locate the version file in the apps repo (cluster:namespace:appname:version)"
     required: true
   messageId:
     description: "Message to update"

@@ -22,23 +22,10 @@ export const ImageDescriptorSerde : Serde<ImageDescriptor> = new Serde(
     }
 );
 
-export type AppDescriptor = { cluster: string; namespace: string; appname: string; };
-export const AppDescriptorSerde : Serde<AppDescriptor> = new Serde(
-    (descriptor) => `${descriptor.cluster}:${descriptor.namespace}:${descriptor.appname}`,
-    (descriptor) => {
-        const fragments = descriptor.split(':').map(it => it.trim());
-        require(fragments.length === 3, () => `Invalid descriptor: ${descriptor}`);
-
-        const [cluster, namespace, appname] = fragments;
-        requireNotNullOrEmpty(cluster);
-        requireNotNullOrEmpty(namespace);
-        requireNotNullOrEmpty(appname);
-
-        return { cluster, namespace, appname };
-    }
-);
-
-export type AppDeployDescriptor = AppDescriptor & {
+export type AppDeployDescriptor = {
+    readonly cluster: string;
+    readonly namespace: string;
+    readonly appname: string;
     readonly version: string;
 }
 
