@@ -1,0 +1,37 @@
+inputs:
+  channel:
+    description: "Slack channel ID to post in"
+    required: true
+  environment:
+    description: "Environment the deployment is meant for"
+    required: true
+  appDescriptor:
+    description: "App descriptor used to locate the version file in the apps repo (cluster:namespace:appname:version)"
+    required: true
+outputs:
+  messageId:
+    description: "Slack message timestamp to be reused for updates"
+    value: ${{ steps.slack_notify.outputs.messageId }}
+
+name: "Slack Prod Approval - Setup (with OctoSTS)"
+description: "Post a message to slack for approval using OctoSTS-minted token for heimdall-apps"
+runs:
+  using: "composite"
+  steps:
+    - name: Mint token for apps repo
+      id: octo-sts
+      uses: octo-sts/action@v1.0.1
+      with:
+        scope: kartverket/heimdall-apps
+        identity: heimdall
+    - name: Slack notify (setup)
+      id: slack_notify
+      uses: ./slack-approval-notifier/setup
+      with:
+        channel: ${{ inputs.channel }}
+        environment: ${{ inputs.environment }}
+        appDescriptor: ${{ inputs.appDescriptor }}
+      env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        APPS_REPO_TOKEN: ${{ steps.octo-sts.outputs.token }}
+        SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}

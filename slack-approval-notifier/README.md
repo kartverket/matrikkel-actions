@@ -23,14 +23,13 @@ defaults:
 
 jobs:
   deploy-prod-notifier:
-    name: Slack notification (Setup)
     runs-on: ubuntu-latest
     outputs:
       messageId: ${{ steps.slack_notify.outputs.messageId }}
     steps:
-      - name: Notify slack (Setup)
+      - name: Notify slack (Setup via OctoSTS)
         id: slack_notify
-        uses: kartverket/matrikkel-actions/slack-approval-notifier/setup@feat/slack-notifier-action
+        uses: kartverket/matrikkel-actions/slack-approval-notifier/setup-octo@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
@@ -39,14 +38,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   deploy-prod:
-    name: Deploy Prod
     runs-on: ubuntu-latest
     needs: deploy-prod-notifier
     environment:
-      name: production # guard which requires approval
+      name: production
     steps:
       - name: Notify slack (Update)
-        # This "update" action has a post-step reporting the final state of your action
         uses: kartverket/matrikkel-actions/slack-approval-notifier/update@feat/slack-notifier-action
         with:
           channel: ${{ env.SLACK_CHANNEL }}
@@ -57,7 +54,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
       - name:  Deploy Prod
         shell: bash
         run: |

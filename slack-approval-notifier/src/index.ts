@@ -36,9 +36,10 @@ function readCommitsFromState(): ApprovalState['commits'] | undefined {
 
 async function resolveCommits(
     octokit: ReturnType<typeof github.getOctokit>,
+    appsRepoOctokit: ReturnType<typeof github.getOctokit>,
     descriptor: AppDeployDescriptor
 ): Promise<ApprovalState['commits']> {
-    const previousVersion = await getCurrentVersionFromAppsRepo(octokit, descriptor);
+    const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
     if (!previousVersion) {
         core.error('Could not find previous version in production');
         process.exit(1);
@@ -80,8 +81,16 @@ async function run() {
         }
 
         if (state.commits.length == 0) {
+            const appsRepoToken = process.env.APPS_REPO_TOKEN;
+            if (!appsRepoToken) {
+                core.setFailed('Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).')
+                return;
+            }
+            const appsRepoOctokit = github.getOctokit(appsRepoToken);
+
             state.commits = await resolveCommits(
                 octokit,
+                appsRepoOctokit,
                 appsRepoDescriptor,
             );
             core.saveState('commits', JSON.stringify(state.commits));

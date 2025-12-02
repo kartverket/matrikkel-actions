@@ -40175,8 +40175,8 @@ function readCommitsFromState() {
   }
   return JSON.parse(commitsState);
 }
-async function resolveCommits(octokit, descriptor) {
-  const previousVersion = await getCurrentVersionFromAppsRepo(octokit, descriptor);
+async function resolveCommits(octokit, appsRepoOctokit, descriptor) {
+  const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
   if (!previousVersion) {
     core2.error("Could not find previous version in production");
     process.exit(1);
@@ -40210,7 +40210,13 @@ async function run() {
       commits: readCommitsFromState() ?? []
     };
     if (state.commits.length == 0) {
-      state.commits = await resolveCommits(octokit, appsRepoDescriptor);
+      const appsRepoToken = process.env.APPS_REPO_TOKEN;
+      if (!appsRepoToken) {
+        core2.setFailed("Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).");
+        return;
+      }
+      const appsRepoOctokit = github2.getOctokit(appsRepoToken);
+      state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepoDescriptor);
       core2.saveState("commits", JSON.stringify(state.commits));
     }
     const approvers = await getApprovers(octokit);
