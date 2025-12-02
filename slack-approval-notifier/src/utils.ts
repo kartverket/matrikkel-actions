@@ -56,7 +56,10 @@ function buildMessage(channel: string, state: ApprovalState) {
     const approverElement: ContextBlockElement | null = state.approver ? {
         "type": "mrkdwn",
         "text": `*Godkjent av:* <https://github.com/${state.approver}|${state.approver}>`
-    } : null;
+    } : {
+        "type": "mrkdwn",
+        "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
+    };
 
     return {
         channel,
@@ -75,7 +78,6 @@ function buildMessage(channel: string, state: ApprovalState) {
                     {
                         "type": "context",
                         "elements": [
-                            approverElement,
                             {
                                 "type": "mrkdwn",
                                 "text": `*Status:* ${laf.text}`
@@ -84,10 +86,7 @@ function buildMessage(channel: string, state: ApprovalState) {
                                 "type": "mrkdwn",
                                 "text": `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
                             },
-                            {
-                                "type": "mrkdwn",
-                                "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
-                            }
+                            approverElement,
                         ].filter(it => it != null)
                     }
                 ].filter(it => it != null)
