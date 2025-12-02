@@ -17,11 +17,11 @@ export type ApprovalState = {
 
 export type LaF = { icon: string; color: string; text: string; }
 export const LaFLUT: Record<ApprovalStatus, LaF> = {
-    AWAITING: {icon: ':hourglass_flowing_sand:', color: '#B0BEC5', text: 'Awaiting approval'},
-    RUNNING: {icon: ':rocket:', color: '#42A5F5', text: 'Deploying'},
-    SUCCESS: {icon: ':white_check_mark:', color: '#2E7D32', text: 'Success'},
-    FAILURE: {icon: ':x:', color: '#D32F2F', text: 'Failure'},
-    CANCELLED: {icon: ':stop_sign:', color: '#F6C344', text: 'Cancelled'},
+    AWAITING: {icon: ':hourglass_flowing_sand:', color: '#B0BEC5', text: 'Venter på godkjenning'},
+    RUNNING: {icon: ':rocket:', color: '#42A5F5', text: 'Prodsettes'},
+    SUCCESS: {icon: ':white_check_mark:', color: '#2E7D32', text: 'Suksess'},
+    FAILURE: {icon: ':x:', color: '#D32F2F', text: 'Feilet'},
+    CANCELLED: {icon: ':stop_sign:', color: '#F6C344', text: 'Avbrutt'},
 }
 
 export async function postMessage(client: WebClient, channel: string, state: ApprovalState) {
@@ -55,7 +55,7 @@ function buildMessage(channel: string, state: ApprovalState) {
     } : null;
     const approverElement: ContextBlockElement | null = state.approver ? {
         "type": "mrkdwn",
-        "text": `*Approver:* <https://github.com/${state.approver}|${state.approver}>`
+        "text": `*Godkjent av:* <https://github.com/${state.approver}|${state.approver}>`
     } : null;
 
     return {
@@ -68,7 +68,7 @@ function buildMessage(channel: string, state: ApprovalState) {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": `${laf.icon} Deployment of ${github.context.repo.repo}:${state.version} to ${state.environment}`
+                            "text": `${laf.icon} Prodsetting av ${github.context.repo.repo}:${state.version} til ${state.environment}`
                         }
                     },
                     commitBlock,
@@ -82,11 +82,11 @@ function buildMessage(channel: string, state: ApprovalState) {
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": `*Run:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
+                                "text": `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Go to approval?>`
+                                "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
                             }
                         ].filter(it => it != null)
                     }

@@ -40030,11 +40030,11 @@ var AppDeployDescriptorSerde = new Serde((descriptor) => `${descriptor.cluster}:
 
 // src/utils.ts
 var LaFLUT = {
-  AWAITING: { icon: ":hourglass_flowing_sand:", color: "#B0BEC5", text: "Awaiting approval" },
-  RUNNING: { icon: ":rocket:", color: "#42A5F5", text: "Deploying" },
-  SUCCESS: { icon: ":white_check_mark:", color: "#2E7D32", text: "Success" },
-  FAILURE: { icon: ":x:", color: "#D32F2F", text: "Failure" },
-  CANCELLED: { icon: ":stop_sign:", color: "#F6C344", text: "Cancelled" }
+  AWAITING: { icon: ":hourglass_flowing_sand:", color: "#B0BEC5", text: "Venter på godkjenning" },
+  RUNNING: { icon: ":rocket:", color: "#42A5F5", text: "Prodsettes" },
+  SUCCESS: { icon: ":white_check_mark:", color: "#2E7D32", text: "Suksess" },
+  FAILURE: { icon: ":x:", color: "#D32F2F", text: "Feilet" },
+  CANCELLED: { icon: ":stop_sign:", color: "#F6C344", text: "Avbrutt" }
 };
 async function postMessage(client, channel, state) {
   const response = await client.chat.postMessage(buildMessage(channel, state));
@@ -40060,7 +40060,7 @@ function buildMessage(channel, state) {
   } : null;
   const approverElement = state.approver ? {
     type: "mrkdwn",
-    text: `*Approver:* <https://github.com/${state.approver}|${state.approver}>`
+    text: `*Godkjent av:* <https://github.com/${state.approver}|${state.approver}>`
   } : null;
   return {
     channel,
@@ -40072,7 +40072,7 @@ function buildMessage(channel, state) {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: `${laf.icon} Deployment of ${github.context.repo.repo}:${state.version} to ${state.environment}`
+              text: `${laf.icon} Prodsetting av ${github.context.repo.repo}:${state.version} til ${state.environment}`
             }
           },
           commitBlock,
@@ -40086,7 +40086,11 @@ function buildMessage(channel, state) {
               },
               {
                 type: "mrkdwn",
-                text: `*Run:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Go to approval?>`
+                text: `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
+              },
+              {
+                type: "mrkdwn",
+                text: `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
               }
             ].filter((it) => it != null)
           }
@@ -40211,7 +40215,7 @@ async function run() {
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       commits: readCommitsFromState() ?? []
     };
-    if (state.commits.length == 0) {
+    if (!isPostStep && state.commits.length == 0) {
       const appsRepoToken = process.env.APPS_REPO_TOKEN;
       if (!appsRepoToken) {
         core2.setFailed("Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).");
