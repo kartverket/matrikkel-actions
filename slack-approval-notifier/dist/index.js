@@ -40176,6 +40176,7 @@ function readStatus() {
 }
 function readCommitsFromState() {
   const commitsState = core2.getState("commits");
+  core2.debug(`commits: ${commitsState}`);
   if (!commitsState) {
     return;
   }
@@ -40215,6 +40216,8 @@ async function run() {
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       commits: readCommitsFromState() ?? []
     };
+    core2.info(`IsPostStep: ${isPostStep}`);
+    core2.info(`Commits: ${state.commits.length}`);
     if (!isPostStep && state.commits.length == 0) {
       const appsRepoToken = process.env.APPS_REPO_TOKEN;
       if (!appsRepoToken) {
@@ -40225,7 +40228,7 @@ async function run() {
       state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepoDescriptor);
       core2.saveState("commits", JSON.stringify(state.commits));
     }
-    const approvers = await getApprovers(octokit);
+    const approvers = isPostStep ? [] : await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
     }
