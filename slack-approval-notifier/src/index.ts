@@ -28,6 +28,7 @@ function readStatus(): ApprovalStatus {
 
 function readCommitsFromState(): ApprovalState['commits'] | undefined {
     const commitsState = core.getState('commits');
+    core.debug(`commits: ${commitsState}`);
     if (!commitsState) {
         return undefined;
     }
@@ -80,6 +81,8 @@ async function run() {
             commits: readCommitsFromState() ?? []
         }
 
+        core.info(`IsPostStep: ${isPostStep}`)
+        core.info(`Commits: ${state.commits.length}`)
         if (!isPostStep && state.commits.length == 0) {
             const appsRepoToken = process.env.APPS_REPO_TOKEN;
             if (!appsRepoToken) {
