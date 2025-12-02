@@ -82,7 +82,11 @@ function buildMessage(channel: string, state: ApprovalState) {
                             },
                             {
                                 "type": "mrkdwn",
-                                "text": `*Run:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Go to approval?>`
+                                "text": `*Run:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
+                            },
+                            {
+                                "type": "mrkdwn",
+                                "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Go to approval?>`
                             }
                         ].filter(it => it != null)
                     }
