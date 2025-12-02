@@ -26,7 +26,7 @@ runs:
         identity: heimdall
     - name: Slack notify (setup)
       id: slack_notify
-      uses: ./slack-approval-notifier/setup
+      uses: kartverket/matrikkel-actions/slack-approval-notifier/setup@feat/slack-notifier-action
       with:
         channel: ${{ inputs.channel }}
         environment: ${{ inputs.environment }}
