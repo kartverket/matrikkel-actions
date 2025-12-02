@@ -40142,7 +40142,9 @@ async function getCommitsBetweenVersions(octokit, base, head) {
         "X-GitHub-Api-Version": "2022-11-28"
       }
     });
-    return compare.data.commits.map((commit) => ({
+    const commits = compare.data.commits;
+    core.info(`Found ${commits.length} commits between ${base} and ${head}`);
+    return commits.map((commit) => ({
       gitsha: commit.sha.slice(0, 7),
       message: (commit.commit?.message ?? "").split(`
 `)[0].trim()

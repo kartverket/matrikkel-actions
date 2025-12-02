@@ -159,8 +159,11 @@ export async function getCommitsBetweenVersions(
                 "X-GitHub-Api-Version": "2022-11-28",
             },
         });
+        const commits = compare.data.commits;
 
-        return compare.data.commits.map(commit => ({
+        core.info(`Found ${commits.length} commits between ${base} and ${head}`);
+
+        return commits.map(commit => ({
             gitsha: commit.sha.slice(0, 7),
             message: (commit.commit?.message ?? '').split('\n')[0]!.trim(),
         }));
