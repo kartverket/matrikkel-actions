@@ -80,7 +80,7 @@ async function run() {
             commits: readCommitsFromState() ?? []
         }
 
-        if (state.commits.length == 0) {
+        if (!isPostStep && state.commits.length == 0) {
             const appsRepoToken = process.env.APPS_REPO_TOKEN;
             if (!appsRepoToken) {
                 core.setFailed('Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).')
