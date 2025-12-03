@@ -36,10 +36,10 @@ export const AppDeployDescriptorSerde : Serde<AppDeployDescriptor> = new Serde(
         require(fragments.length === 4, () => `Invalid descriptor: ${descriptor}`);
 
         const [cluster, namespace, appname, version] = fragments;
-        requireNotNullOrEmpty(cluster);
-        requireNotNullOrEmpty(namespace);
-        requireNotNullOrEmpty(appname);
-        requireNotNullOrEmpty(version);
+        requireNotNullOrEmpty(cluster, () => `Field "cluster" cannot be null or empty`);
+        requireNotNullOrEmpty(namespace, () => `Field "namespace" cannot be null or empty`);
+        requireNotNullOrEmpty(appname, () => `Field "appname" cannot be null or empty`);
+        requireNotNullOrEmpty(version, () => `Field "version" cannot be null or empty`);
 
         return { cluster, namespace, appname, version };
     }

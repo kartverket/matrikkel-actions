@@ -39972,9 +39972,9 @@ function require2(value, message = () => "Value is required to be true") {
   if (!value)
     throw new Error(message());
 }
-function requireNotNullOrEmpty(value) {
-  requireNotNull(value);
-  requireNotEmpty(value);
+function requireNotNullOrEmpty(value, message) {
+  requireNotNull(value, message);
+  requireNotEmpty(value, message);
 }
 function requireNotNull(value, message = () => "Value cannot be null-ish") {
   require2(value != null, message);
@@ -40021,10 +40021,10 @@ var AppDeployDescriptorSerde = new Serde((descriptor) => `${descriptor.cluster}:
   const fragments = descriptor.split(":").map((it) => it.trim());
   require2(fragments.length === 4, () => `Invalid descriptor: ${descriptor}`);
   const [cluster, namespace, appname, version] = fragments;
-  requireNotNullOrEmpty(cluster);
-  requireNotNullOrEmpty(namespace);
-  requireNotNullOrEmpty(appname);
-  requireNotNullOrEmpty(version);
+  requireNotNullOrEmpty(cluster, () => `Field "cluster" cannot be null or empty`);
+  requireNotNullOrEmpty(namespace, () => `Field "namespace" cannot be null or empty`);
+  requireNotNullOrEmpty(appname, () => `Field "appname" cannot be null or empty`);
+  requireNotNullOrEmpty(version, () => `Field "version" cannot be null or empty`);
   return { cluster, namespace, appname, version };
 });
 
@@ -40091,7 +40091,7 @@ function buildMessage(channel, state) {
                 text: `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
               },
               approverElement
-            ].filter((it) => it != null)
+            ]
           }
         ].filter((it) => it != null)
       }

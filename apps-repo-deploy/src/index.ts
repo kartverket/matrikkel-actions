@@ -37,7 +37,7 @@ for (const app of apps) {
     const exists = await versionFile.exists();
     require(exists, () => `Could not find version file ${versionFilePath} (${AppDeployDescriptorSerde.serialize(app)})`);
 
-    const imageDescriptorStr = (await versionFile.text()).trim()
+    const imageDescriptorStr = await versionFile.text();
     const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
     const newImageDescriptor = {...imageDescriptor, version: app.version};
     const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
