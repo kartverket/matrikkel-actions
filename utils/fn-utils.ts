@@ -7,9 +7,10 @@ export function require(
 
 export function requireNotNullOrEmpty(
     value: string | null | undefined,
+    message?: (() => string)
 ): asserts value is string {
-    requireNotNull(value);
-    requireNotEmpty(value);
+    requireNotNull(value, message);
+    requireNotEmpty(value, message);
 }
 
 export function requireNotNull<T>(

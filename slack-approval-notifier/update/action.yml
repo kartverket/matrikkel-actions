@@ -1,0 +1,25 @@
+name: "Slack Prod Approval - Update"
+description: "Updates message on slack"
+runs:
+  using: "node20"
+  main: "../dist/index.js"
+  post: "../dist/index.js"
+inputs:
+  status:
+    description: "The current status (AWAITING, RUNNING, SUCCESS, FAILURE)"
+    required: true
+  channel:
+    description: "Slack channel ID to post in"
+    required: true
+  environment:
+    description: "Environment the deployment is meant for"
+    required: true
+  appDescriptor:
+    description: "App descriptor used to locate the version file in the apps repo (cluster:namespace:appname:version)"
+    required: true
+  messageId:
+    description: "Message to update"
+    required: true
+outputs:
+  messageId:
+    description: "Slack message timestamp to be reused for updates"

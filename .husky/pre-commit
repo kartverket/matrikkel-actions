@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+bun test
+
+# Stash uncommitted changes (keep staged ones, since pre-commit runs pre-commit)
+git stash push -k -m "pre-commit build stash"
+
+cleanup() {
+  echo "Restoring stashed changes..."
+  git stash pop || echo "No stash to pop or conflict occurred."
+}
+trap cleanup EXIT
+
+# Build and stage dist file
+cd slack-approval-notifier
+bun run build
+git add dist/index.js
+cd ..
+
+# Done — Git will now proceed with the commit including the new dist file
+echo "✅ Build complete and dist/index.js staged."

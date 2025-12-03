@@ -2,15 +2,13 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {
-    AppDeployDescriptorSerde,
-    type AppDeployDescriptor,
     fatal,
-    ImageDescriptorSerde,
-    versionPathForApp,
     type UpdateEntry,
     createCommitMessage
 } from "./utils.ts";
-import {require} from "./fn-utils.ts";
+import { AppDeployDescriptorSerde, type AppDeployDescriptor, ImageDescriptorSerde } from '../../utils/common-types.ts';
+import {require} from "../../utils/fn-utils.ts";
+import {versionPathForApp} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
@@ -39,7 +37,7 @@ for (const app of apps) {
     const exists = await versionFile.exists();
     require(exists, () => `Could not find version file ${versionFilePath} (${AppDeployDescriptorSerde.serialize(app)})`);
 
-    const imageDescriptorStr = (await versionFile.text()).trim()
+    const imageDescriptorStr = await versionFile.text();
     const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
     const newImageDescriptor = {...imageDescriptor, version: app.version};
     const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
