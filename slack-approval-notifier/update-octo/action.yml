@@ -32,7 +32,7 @@ runs:
         identity: heimdall
     - name: Slack notify (update)
       id: slack_notify
-      uses: kartverket/matrikkel-actions/slack-approval-notifier/update@feat/slack-notifier-action
+      uses: kartverket/matrikkel-actions/slack-approval-notifier/update@main
       with:
         channel: ${{ inputs.channel }}
         environment: ${{ inputs.environment }}

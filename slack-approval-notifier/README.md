@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Notify slack (Setup via OctoSTS)
         id: slack_notify
-        uses: kartverket/matrikkel-actions/slack-approval-notifier/setup-octo@feat/slack-notifier-action
+        uses: kartverket/matrikkel-actions/slack-approval-notifier/setup-octo@main
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
@@ -44,7 +44,7 @@ jobs:
       name: production
     steps:
       - name: Notify slack (Update)
-        uses: kartverket/matrikkel-actions/slack-approval-notifier/update@feat/slack-notifier-action
+        uses: kartverket/matrikkel-actions/slack-approval-notifier/update@main
         with:
           channel: ${{ env.SLACK_CHANNEL }}
           environment: ${{ env.ENVIRONMENT }}
