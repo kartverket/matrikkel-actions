@@ -1,25 +1,19 @@
-# apps-repo-deploy
+# Apps repo deploy Action
 
 Custom github action to update application versions in [Heimdalls Apps Repo](https://github.com/kartverket/heimdall-apps).
 
-## Usage
+## Før bruk
+Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard/heimdall.sts.yaml)
 
-Must have OctoSTS configured against heimdall-apps.
+## Bruk
 
-In your application repository:
 ```yaml
-on:
-  push:
-    - 'main'
-
-concurrency:
-  group: heimdall-apps-deploy
-  cancel-in-progress: false
-
 jobs:
   deploy-to-all:
     name: Deploy til alle miljøer
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # To get OctoSTS token for updating apps-repo
   steps:
     - uses: actions/checkout@v4
     - uses: kartverket/matrikkel-actions/apps-repo-deploy/action.yml@main

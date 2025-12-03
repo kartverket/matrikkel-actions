@@ -1,62 +1,66 @@
-# slack-approval-notifier
+# Slack approval notifier Action
 
-Custom github action to post notification to slack to get approvals to deployments
+Action for å fyre av notifikasjoner til slack for godkjenning av prodsettinger.
 
-## Usage
+## Før bruk
+1. Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard/heimdall.sts.yaml)
+2. Legge til `SLACK_BOT_TOKEN` som secret i repoet
 
-In your application repository:
+
+## Bruk
+
 ```yaml
-name: Example
-on:
-  workflow_dispatch:
-
-env:
-  CI: true
-  TZ: Europe/Oslo
-  SLACK_CHANNEL: C09V5AXA4R5
-  ENVIRONMENT: production
-  APP_VERSION: 1.2.3
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
+  # Tidligere steg kan ha deployet til dev, QA, etc.
+
   deploy-prod-notifier:
+    name: "Slack Notify: Deployment to production"
     runs-on: ubuntu-latest
+    needs:
+      # Trenger mulig avhengigheter her, om man har laget nytt versjonsnummer etc
+    permissions:
+      actions: read   # To read approvals from action
+      contents: read  # To get the changelog from previous version
+      id-token: write # To get OctoSTS token for getting current deployed version from apps-repo 
     outputs:
       messageId: ${{ steps.slack_notify.outputs.messageId }}
     steps:
-      - name: Notify slack (Setup via OctoSTS)
+      - name: "Slack Notify: Deployment to production"
         id: slack_notify
         uses: kartverket/matrikkel-actions/slack-approval-notifier/setup-octo@main
         with:
-          channel: ${{ env.SLACK_CHANNEL }}
-          environment: ${{ env.ENVIRONMENT }}
-          appDescriptor: atkv3-prod:matrikkel-nd:matrikkel-app:${{ env.APP_VERSION }}
+          channel: C01V1AXA1R1        # Slack channel ID
+          environment: "produksjon"   # Miljø som man deployer til
+          appDescriptor: atkv3-prod:matrikkel-main:matrikkel-appname:1.2.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: deploy-prod-notifier
+    needs:
+      - deploy-prod-notifier
     environment:
-      name: production
+      name: production # Denne gjør at man kan konfigurere for manuell godkjenning
     steps:
-      - name: Notify slack (Update)
+      - name: "Slack Notify: Deployment to production (Update)"
         uses: kartverket/matrikkel-actions/slack-approval-notifier/update@main
         with:
-          channel: ${{ env.SLACK_CHANNEL }}
-          environment: ${{ env.ENVIRONMENT }}
-          appDescriptor: atkv3-prod:matrikkel-nd:matrikkel-app:${{ env.APP_VERSION }}
+          channel: C01V1AXA1R1        # Slack channel ID
+          environment: "produksjon"   # Miljø som man deployer til
+          appDescriptor: atkv3-prod:matrikkel-main:matrikkel-appname:1.2.3
           messageId: ${{ needs.deploy-prod-notifier.outputs.messageId }}
           status: ${{ job.status }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      - name:  Deploy Prod
-        shell: bash
-        run: |
-          sleep 10
-          echo " Deploy Prod"
+      
+      # Eksempel på hvordan deployen kan være.   
+      - name:  Deploy to production
+        uses: kartverket/matrikkel-actions/apps-repo-deploy@main
+        with:
+          apps: |
+            atkv3-prod:matrikkel-main:matrikkel-appname:${{ needs.version.outputs.version }}
+      
+      # slack-approval-notifier/update har post-script, som vil automatisk kjøre når alt er ferdig og oppdatere meldingen i slack 
 ```
