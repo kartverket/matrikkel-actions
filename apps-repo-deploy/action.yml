@@ -30,9 +30,10 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cd "${{ github.action_path }}"
+        # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
+        cd "${{ github.action_path }}/.."
         bun install --frozen-lockfile
-        bun run src/index.ts
+        bun run apps-repo-deploy/src/index.ts
       env:
         INPUT_APPS: ${{ inputs.apps }}
         INPUT_DRYRUN: ${{ inputs.dryrun }}
