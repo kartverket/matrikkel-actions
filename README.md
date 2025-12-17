@@ -50,6 +50,13 @@ flowchart LR
 name: Reference workflow for Heimdall
 on:
   push: # Run on every push to every branch
+  workflow_dispatch:
+    inputs:
+      fast-track:
+        description: 'Fast track deploy (skip tester)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   CI: true
@@ -83,6 +90,7 @@ jobs:
   
   test:
     name: Run tests
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.fast-track) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -94,6 +102,7 @@ jobs:
   
   package:
     name: Build and (Conditionally) push docker image
+    if: ${{ always() && (needs.run-tests.result == 'success' || needs.run-tests.result == 'skipped') }}
     runs-on: ubuntu-latest
     needs:
       - version
