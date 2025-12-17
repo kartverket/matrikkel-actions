@@ -14,7 +14,7 @@ Action for å fyre av notifikasjoner til slack for godkjenning av prodsettinger.
 Lager er branch, pusher, og oppretter en PR. Kan automatisk merge en PR, men dette krever at repoet den brukes i støtter auto-merge.
 
 ## Referanse workflow
-
+### Standard pipeline
 ```mermaid
 flowchart LR
     commit((Commit til main))
@@ -44,6 +44,28 @@ flowchart LR
     deploy-stage --> deploy-prod-notifier
 
     deploy-prod-notifier --> deploy-prod
+```
+### Fast track pipeline
+```mermaid
+flowchart LR
+    commit((Commit til main))
+    version["Generer versjonsnummer"]
+    package["Bygg og publiser artifakter"]
+    pharos["Kjør pharos"]
+    deploy-dev["Deploy til dev"]
+    deploy-stage["Deploy til stage"]
+    deploy-prod-notifier{"Manuell godkjenning"}
+    deploy-prod["Deploy til produksjon"]
+
+    commit --> version
+    version --> package
+    package --> pharos
+    package --> deploy-dev
+    deploy-dev --> deploy-stage
+    pharos --> deploy-prod-notifier
+    deploy-stage --> deploy-prod-notifier
+    deploy-prod-notifier --> deploy-prod
+
 ```
 
 ```yaml
