@@ -14,7 +14,7 @@ Action for å fyre av notifikasjoner til slack for godkjenning av prodsettinger.
 Lager er branch, pusher, og oppretter en PR. Kan automatisk merge en PR, men dette krever at repoet den brukes i støtter auto-merge.
 
 ## Referanse workflow
-
+### Standard pipeline
 ```mermaid
 flowchart LR
     commit((Commit til main))
@@ -45,11 +45,40 @@ flowchart LR
 
     deploy-prod-notifier --> deploy-prod
 ```
+### Fast track pipeline
+```mermaid
+flowchart LR
+    commit((Commit til main))
+    version["Generer versjonsnummer"]
+    package["Bygg og publiser artifakter"]
+    pharos["Kjør pharos"]
+    deploy-dev["Deploy til dev"]
+    deploy-stage["Deploy til stage"]
+    deploy-prod-notifier{"Manuell godkjenning"}
+    deploy-prod["Deploy til produksjon"]
+
+    commit --> version
+    version --> package
+    package --> pharos
+    package --> deploy-dev
+    deploy-dev --> deploy-stage
+    pharos --> deploy-prod-notifier
+    deploy-stage --> deploy-prod-notifier
+    deploy-prod-notifier --> deploy-prod
+
+```
 
 ```yaml
 name: Reference workflow for Heimdall
 on:
   push: # Run on every push to every branch
+  workflow_dispatch:
+    inputs:
+      fast-track:
+        description: 'Fast track deploy (skip tester)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   CI: true
@@ -83,6 +112,7 @@ jobs:
   
   test:
     name: Run tests
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.fast-track) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -94,6 +124,7 @@ jobs:
   
   package:
     name: Build and (Conditionally) push docker image
+    if: ${{ always() && (needs.run-tests.result == 'success' || needs.run-tests.result == 'skipped') }}
     runs-on: ubuntu-latest
     needs:
       - version
