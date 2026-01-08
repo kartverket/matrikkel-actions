@@ -40055,7 +40055,7 @@ function buildCommitString(state) {
   let length = 0;
   const strBuilder = [];
   for (const commit of state.commits) {
-    const line = `\`${commit.gitsha}\` ${commit.message}`;
+    const line = stringLimit(`\`${commit.gitsha}\` ${commit.message}`, 100);
     if (length + line.length + 1 >= TXT_CUTOFF) {
       strBuilder.push(TXT_OVERFLOW);
       break;
@@ -40065,6 +40065,11 @@ function buildCommitString(state) {
   }
   return strBuilder.join(`
 `);
+}
+function stringLimit(value, limit) {
+  if (value.length <= limit)
+    return value;
+  return value.substring(0, limit - 3) + "...";
 }
 function buildMessage(channel, state) {
   const commits = buildCommitString(state);

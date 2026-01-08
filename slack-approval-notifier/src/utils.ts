@@ -51,7 +51,7 @@ function buildCommitString(state: ApprovalState): string {
     let length = 0;
     const strBuilder: string[] = [];
     for (const commit of state.commits) {
-        const line = `\`${commit.gitsha}\` ${commit.message}`
+        const line = stringLimit(`\`${commit.gitsha}\` ${commit.message}`, 100)
         if (length + line.length + 1 >= TXT_CUTOFF) {
             strBuilder.push(TXT_OVERFLOW)
             break;
@@ -61,6 +61,11 @@ function buildCommitString(state: ApprovalState): string {
         length += line.length + 1; // +1 to account for lineshifts
     }
     return strBuilder.join('\n');
+}
+
+function stringLimit(value: string, limit: number): string {
+    if (value.length <= limit) return value;
+    return value.substring(0, limit - 3) + '...';
 }
 
 function buildMessage(channel: string, state: ApprovalState) {
