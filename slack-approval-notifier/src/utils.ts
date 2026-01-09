@@ -39,10 +39,37 @@ export async function updateMessage(client: WebClient, channel: string, ts: stri
     return {ts: response.ts, channel: response.channel};
 }
 
+const TXT_LIMIT = 3000;
+const TXT_OVERFLOW = '...\nOg mye mer...';
+const TXT_CUTOFF = TXT_LIMIT - TXT_OVERFLOW.length;
+
+/**
+ * Builds a single string representation of all commits.
+ * The length is limited in slacks-api to 3000, hence we stop before this and insert an "overflow-message".
+ */
+function buildCommitString(state: ApprovalState): string {
+    let length = 0;
+    const strBuilder: string[] = [];
+    for (const commit of state.commits) {
+        const line = stringLimit(`\`${commit.gitsha}\` ${commit.message}`, 100)
+        if (length + line.length + 1 >= TXT_CUTOFF) {
+            strBuilder.push(TXT_OVERFLOW)
+            break;
+        }
+
+        strBuilder.push(line);
+        length += line.length + 1; // +1 to account for lineshifts
+    }
+    return strBuilder.join('\n');
+}
+
+function stringLimit(value: string, limit: number): string {
+    if (value.length <= limit) return value;
+    return value.substring(0, limit - 3) + '...';
+}
+
 function buildMessage(channel: string, state: ApprovalState) {
-    const commits: string = state.commits
-        .map((it) => `\`${it.gitsha}\` ${it.message}`)
-        .join('\n');
+    const commits: string = buildCommitString(state);
 
     const laf = LaFLUT[state.status];
 

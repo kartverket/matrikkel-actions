@@ -40047,9 +40047,32 @@ async function updateMessage(client, channel, ts, state) {
   });
   return { ts: response.ts, channel: response.channel };
 }
-function buildMessage(channel, state) {
-  const commits = state.commits.map((it) => `\`${it.gitsha}\` ${it.message}`).join(`
+var TXT_LIMIT = 3000;
+var TXT_OVERFLOW = `...
+Og mye mer...`;
+var TXT_CUTOFF = TXT_LIMIT - TXT_OVERFLOW.length;
+function buildCommitString(state) {
+  let length = 0;
+  const strBuilder = [];
+  for (const commit of state.commits) {
+    const line = stringLimit(`\`${commit.gitsha}\` ${commit.message}`, 100);
+    if (length + line.length + 1 >= TXT_CUTOFF) {
+      strBuilder.push(TXT_OVERFLOW);
+      break;
+    }
+    strBuilder.push(line);
+    length += line.length + 1;
+  }
+  return strBuilder.join(`
 `);
+}
+function stringLimit(value, limit) {
+  if (value.length <= limit)
+    return value;
+  return value.substring(0, limit - 3) + "...";
+}
+function buildMessage(channel, state) {
+  const commits = buildCommitString(state);
   const laf = LaFLUT[state.status];
   const commitBlock = commits.length > 0 ? {
     type: "section",
