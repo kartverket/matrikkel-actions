@@ -1,0 +1,47 @@
+name: Kubernetes deployment feedback
+description: Checks with kubernetes if apps start as expected
+inputs:
+  cluster:
+    description: Kubernetes cluster the deployments target
+    required: true
+  apps:
+    description: Comma separated list of apps to deploy (cluster:namespace:app:version)
+    required: true
+  timeoutMs:
+    description: Time in milliseconds to wait before failing
+    required: false
+  intervalMs:
+    description: Time in milliseconds to wait before failing
+    required: false
+
+runs:
+  using: composite
+  steps:
+    # TODO: authenticate to gcloud and kubernetes
+    - uses: octo-sts/action@v1.0.1
+      id: octo-sts
+      with:
+        scope: kartverket/heimdall-apps
+        identity: heimdall
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+      with:
+        repository: kartverket/heimdall-apps
+        ref: main
+        token: ${{ steps.octo-sts.outputs.token }}
+        fetch-depth: 0
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+    - name: Update versions
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
+        cd "${{ github.action_path }}/.."
+        bun install --frozen-lockfile
+        bun run k8s-deployment-feedback/src/index.ts
+      env:
+        INPUT_CLUSTER: ${{ inputs.cluster }}
+        INPUT_APPS: ${{ inputs.apps }}
+        INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
+        INPUT_INTERVALMS: ${{ inputs.intervalMs }}
