@@ -52,7 +52,7 @@ while (true) {
         '',
         ...groupStatus('Klare deployments', ready, false),
         '',
-        ...groupStatus('Feilede deployments', failed, false),
+        ...groupStatus('Feilede deployments', failed, true),
         '',
     ];
     core.info(lines.join('\n'));
@@ -85,10 +85,10 @@ function groupStatus(heading: string, deploymentStatuses: DeploymentStatus[], ig
     ];
 
     if (deploymentStatuses.length === 0) {
-        output.push('\tIngen')
+        output.push('Ingen')
     } else {
         for (const status of deploymentStatuses) {
-            output.push(`\t${KubernetesAppIdentificatorSerde.serialize(status.app)}`)
+            output.push(`${KubernetesAppIdentificatorSerde.serialize(status.app)}`)
         }
     }
 

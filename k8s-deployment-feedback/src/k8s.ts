@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import {$} from "bun";
 
 export type KList<TResource> = {
@@ -116,8 +117,10 @@ export class Kubectl {
 
     static async asJson(args: string[]) {
         const allArgs = [...args, '-o', 'json']
+        core.debug(`kubectl ${allArgs.join(' ')}`);
         const res = await $`kubectl ${allArgs}`.quiet();
         if (res.exitCode !== 0) {
+            core.debug(`kubectl stderr: ${res.stderr.toString().trim()}`);
             throw new Error(res.stderr.toString().trim() || "kubectl failed");
         }
         const text = res.stdout.toString();

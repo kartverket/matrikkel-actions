@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {Kubectl, type Metadata, type Pod} from "./k8s.ts";
 
@@ -38,6 +39,8 @@ export class K8sNamespaceChecker {
         const allReplicasets = await this.k8s.listReplicasets(labelSelector);
         const allPods = await this.k8s.listPods(labelSelector);
 
+        core.debug(`[k8s] selector="${labelSelector}" deployments=${allDeployment.items.length} replicasets=${allReplicasets.items.length} pods=${allPods.items.length}`);
+
         const output: DeploymentStatus[] = [];
 
         const withName: (name: string) => Predicate<{ metadata?: Metadata }> = (name: string) => (it) => {
@@ -62,6 +65,7 @@ export class K8sNamespaceChecker {
             const deployment = allDeployment.items.find(withName(app.appname));
             const deploymentRevision = deployment?.metadata?.annotations?.["deployment.kubernetes.io/revision"]
             if (!deployment || !deploymentRevision) {
+                core.debug(`[k8s] app ${KubernetesAppIdentificatorSerde.serialize(app)} missing deployment or revision`);
                 output.push({ status: 'NOT_STARTED', app });
                 continue;
             }
@@ -82,6 +86,7 @@ export class K8sNamespaceChecker {
                 )
             );
             if (!replicaset) {
+                core.debug(`[k8s] app ${KubernetesAppIdentificatorSerde.serialize(app)} missing replicaset for revision ${deploymentRevision}`);
                 output.push({status: 'NOT_STARTED', app });
                 continue;
             }
@@ -98,11 +103,16 @@ export class K8sNamespaceChecker {
                     )
                 )
                 .map(K8sNamespaceChecker.getPodstatus)
+            core.debug(`[k8s] app ${KubernetesAppIdentificatorSerde.serialize(app)} rs=${replicaset.metadata.name} rev=${deploymentRevision} readyPods=${readyPods} desiredPods=${desiredPods} pods=${podstatuses.length}`);
             const anyFailed = podstatuses.some(it => it.status === 'FAILED');
             const anyInitializing = podstatuses.some(it => it.status === 'INITIALIZING');
 
             let status: DeploymentStatus['status'] = 'NOT_STARTED';
             if (anyFailed) {
+                const failed = podstatuses.filter(it => it.status === 'FAILED')
+                    .map(it => `${it.podId}:${it.reason}`)
+                    .join(', ');
+                core.debug(`[k8s] app ${KubernetesAppIdentificatorSerde.serialize(app)} failed pods: ${failed}`);
                 status = 'FAILED'
             } else if (anyInitializing) {
                 status = 'INITIALIZING'
