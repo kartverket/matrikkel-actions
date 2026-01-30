@@ -20,7 +20,7 @@ core.info(`Got checkinterval: ${checkIntervalMs}`);
 const kubectl = new Kubectl('matrikkel-main')
 
 const allPods = await kubectl.listPods();
-const statusPods = await kubectl.listPods(`application.skiperator.no/app-name in (matrikkel-status)`);
+const statusPods = await kubectl.listPods(`application.skiperator.no/app-name in (matrikkelstatus)`);
 
 console.log(`Found ${allPods.items.length} in namespace`);
-console.log(`Found ${statusPods.items.length} in namespace matching matrikkel-status label`);
+console.log(`Found ${statusPods.items.length} in namespace matching matrikkelstatus label`);
