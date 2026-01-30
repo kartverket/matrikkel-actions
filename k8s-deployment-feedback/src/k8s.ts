@@ -72,32 +72,32 @@ export class Kubectl {
     async listPods(selector?: string | Record<string, string>): Promise<KList<Pod>> {
         const strSelector = Kubectl.buildSelector(selector);
         if (strSelector) {
-            return Kubectl.exec(`-n ${this.namespace} get pods -l ${strSelector}`);
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'pods', '-l', strSelector]);
         } else {
-            return Kubectl.exec(`-n ${this.namespace} get pods`);
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'pods']);
         }
     }
 
     async listDeployments(selector?: string | Record<string, string>): Promise<KList<Deployment>> {
         const strSelector = Kubectl.buildSelector(selector);
         if (strSelector) {
-            return Kubectl.exec(`-n ${this.namespace} get deployment -l ${strSelector}`)
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'deployment', '-l', strSelector])
         } else {
-            return Kubectl.exec(`-n ${this.namespace} get deployment`)
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'deployment'])
         }
     }
 
     async listReplicasets(selector?: string | Record<string, string>): Promise<KList<ReplicaSet>> {
         const strSelector = Kubectl.buildSelector(selector);
         if (strSelector) {
-            return Kubectl.exec(`-n ${this.namespace} get rs -l ${strSelector}`)
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'rs', '-l', strSelector])
         } else {
-            return Kubectl.exec(`-n ${this.namespace} get rs`)
+            return Kubectl.asJson(['-n', this.namespace, 'get', 'rs'])
         }
     }
 
     async getDeployment(deploymentName: string): Promise<Deployment> {
-        return Kubectl.exec(`-n ${this.namespace} get deployment ${deploymentName}`);
+        return Kubectl.asJson(['-n', this.namespace, 'get', 'deployment', deploymentName]);
     }
 
     private static buildSelector(selector?: string | Record<string, string>): string | undefined {
@@ -108,10 +108,6 @@ export class Kubectl {
                 .join(',')
     }
 
-    static exec(cmd: string) {
-        const args = cmd.split(' ');
-        return Kubectl.asJson(args);
-    }
     static async asJson(args: string[]) {
         const allArgs = [...args, '-o', 'json']
         const res = await $`kubectl ${allArgs}`.quiet();
