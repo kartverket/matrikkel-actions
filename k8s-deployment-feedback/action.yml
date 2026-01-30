@@ -14,7 +14,7 @@ inputs:
     description: Kubernetes cluster the deployments target
     required: true
   apps:
-    description: Comma separated list of apps to deploy (namespace:app:version)
+    description: Multiline list of apps to deploy (namespace:app:version)
     required: true
   timeoutMs:
     description: Time in milliseconds to wait before failing
@@ -68,7 +68,7 @@ runs:
         # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
         cd "${{ github.action_path }}/.."
         bun install --frozen-lockfile
-        bun run k8s-deployment-feedback/src/test-setup.ts
+        bun run k8s-deployment-feedback/src/index.ts
       env:
         INPUT_APPS: ${{ inputs.apps }}
         INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}

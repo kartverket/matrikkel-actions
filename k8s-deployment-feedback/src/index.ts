@@ -36,6 +36,7 @@ while (true) {
         fatal(`Timeout after ${timeoutMs}ms... Check deployment...`)
     }
 
+    core.info('Checking deployments');
     const deploymentStatus = await k8sChecker.checkDeployments();
     const byStatus = groupBy(deploymentStatus, it => it.status);
 

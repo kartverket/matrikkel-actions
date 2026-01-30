@@ -6,29 +6,35 @@ export type KList<TResource> = {
 }
 
 export type Metadata = {
+    uid: string;
     name: string;
     namespace: string;
-    annotations: Record<string, string>;
-    labels: Record<string, string>;
-    ownerReferences?: { kind: string; name: string }[];
+    annotations?: Record<string, string>;
+    labels?: Record<string, string>;
+    ownerReferences: Array<{
+        kind: string;
+        name: string;
+        uid: string;
+    }>;
 };
-
+export type ContainerStatus = {
+    name: string;
+    ready: boolean;
+    restartCount: number;
+    state?: {
+        waiting?: { reason?: string; message?: string };
+        running?: { startedAt?: string };
+        terminated?: { reason?: string; exitCode?: number; message?: string };
+    };
+};
 export type Pod = {
     kind: 'Pod';
     metadata: Metadata;
     status?: {
         phase?: string;
         conditions?: { type: string; status: string }[];
-        containerStatuses?: {
-            name: string;
-            ready: boolean;
-            restartCount: number;
-            state?: {
-                waiting?: { reason?: string; message?: string };
-                running?: { startedAt?: string };
-                terminated?: { reason?: string; exitCode?: number; message?: string };
-            };
-        }[];
+        containerStatuses?: Array<ContainerStatus>;
+        initContainerStatuses?: Array<ContainerStatus>;
     };
 };
 

@@ -1,4 +1,4 @@
-import type {KubernetesAppIdentificator} from "../../utils/common-types.ts";
+import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {Kubectl, type Metadata, type Pod} from "./k8s.ts";
 
 export type DeploymentStatus =
@@ -13,7 +13,7 @@ export type PodStatus =
     | { podId: string; version: string; status: 'FAILED'; reason: string; };
 
 export class K8sNamespaceChecker {
-    private apps: Set<KubernetesAppIdentificator> = new Set();
+    private apps: Map<string, KubernetesAppIdentificator> = new Map();
     private k8s: Kubectl;
 
     constructor(namespace: string) {
@@ -21,62 +21,105 @@ export class K8sNamespaceChecker {
     }
 
     public getApps(): KubernetesAppIdentificator[] {
-        return Array.from(this.apps)
+        return Array.from(this.apps.values())
     }
 
     public addApp(app: KubernetesAppIdentificator) {
-        this.apps.add(app);
+        this.apps.set(KubernetesAppIdentificatorSerde.serialize(app), app);
     }
 
     public async checkDeployments(): Promise<DeploymentStatus[]> {
-        const applist = Array.from(this.apps);
+        const applist = this.getApps();
         const appnames = applist.map(it => it.appname);
 
         const labelSelector = `application.skiperator.no/app-name in (${appnames.join(',')})`;
 
+        const allDeployment = await this.k8s.listDeployments(labelSelector);
         const allReplicasets = await this.k8s.listReplicasets(labelSelector);
         const allPods = await this.k8s.listPods(labelSelector);
 
         const output: DeploymentStatus[] = [];
 
-        for (const app of this.apps) {
-            const appPredicate: (item: { metadata: Metadata }) => Boolean = (it) => {
-                const k8sName = it.metadata.labels['app.kubernetes.io/name'];
-                const k8sVersion = it.metadata.labels['app.kubernetes.io/version'];
+        const withName: (name: string) => Predicate<{ metadata?: Metadata }> = (name: string) => (it) => {
+            const k8sName = it.metadata?.labels?.['app.kubernetes.io/name'];
+            return name === k8sName;
+        }
+        const withVersion: (version: string) => Predicate<{ metadata?: Metadata }> = (name: string) => (it) => {
+            const k8sVersion = it.metadata?.labels?.['app.kubernetes.io/version'];
+            return name === k8sVersion;
+        }
+        const withRevision: (revison: string) => Predicate<{ metadata?: Metadata }> = (name: string) => (it) => {
+            const k8sVersion = it.metadata?.annotations?.['deployment.kubernetes.io/revision'];
+            return name === k8sVersion;
+        }
+        const withOwner: (kind: string, ownerUid: string) => Predicate<{ metadata?: Metadata }> = (kind: string, ownerUid: string) => (it) => {
+            const owner = it.metadata?.ownerReferences
+                ?.find(owner => owner.uid === ownerUid && owner.kind === kind)
+            return owner != null;
+        }
+
+        for (const app of this.getApps()) {
+            const deployment = allDeployment.items.find(withName(app.appname));
+            const deploymentRevision = deployment?.metadata?.annotations?.["deployment.kubernetes.io/revision"]
+            if (!deployment || !deploymentRevision) {
+                output.push({ status: 'NOT_STARTED', app });
+                continue;
+            }
+
+
+            const appPredicate: (item: { metadata?: Metadata }) => Boolean = (it) => {
+                const k8sName = it.metadata?.labels?.['app.kubernetes.io/name'];
+                const k8sVersion = it.metadata?.labels?.['app.kubernetes.io/version'];
                 return k8sName === app.appname && k8sVersion === app.version;
             }
 
-            const replicaset = allReplicasets.items.find(appPredicate);
-
+            const replicaset = allReplicasets.items.find(
+                and(
+                    withName(app.appname),
+                    withVersion(app.version),
+                    withRevision(deploymentRevision),
+                    withOwner('Deployment', deployment.metadata.uid),
+                )
+            );
             if (!replicaset) {
                 output.push({status: 'NOT_STARTED', app });
-            } else {
-                const readyPods = replicaset.status.readyReplicas ?? 0;
-                const desiredPods = Number(replicaset.metadata.annotations['deployment.kubernetes.io/desired-replicas'] ?? '-1');
-                const podstatuses = allPods.items.filter(appPredicate).map(K8sNamespaceChecker.getPodstatus)
-                const anyFailed = podstatuses.some(it => it.status === 'FAILED');
-                const anyInitializing = podstatuses.some(it => it.status === 'INITIALIZING');
-
-                let status: DeploymentStatus['status'] = 'NOT_STARTED';
-                if (anyFailed) {
-                    status = 'FAILED'
-                } else if (anyInitializing) {
-                    status = 'INITIALIZING'
-                } else if (readyPods !== desiredPods) {
-                    status = 'INITIALIZING'
-                } else {
-                    status = 'READY'
-                }
-
-                const deploymentstatus: DeploymentStatus = {
-                    app,
-                    status,
-                    readyPods,
-                    desiredPods,
-                    pods: podstatuses
-                }
-                output.push(deploymentstatus);
+                continue;
             }
+
+            const readyPods = replicaset.status.readyReplicas ?? 0;
+            const desiredPods = Number(replicaset.metadata?.annotations?.['deployment.kubernetes.io/desired-replicas'] ?? '-1');
+            const podstatuses = allPods.items
+                .filter(appPredicate)
+                .filter(
+                    and(
+                        withName(app.appname),
+                        withVersion(app.version),
+                        withOwner('ReplicaSet', replicaset.metadata.uid),
+                    )
+                )
+                .map(K8sNamespaceChecker.getPodstatus)
+            const anyFailed = podstatuses.some(it => it.status === 'FAILED');
+            const anyInitializing = podstatuses.some(it => it.status === 'INITIALIZING');
+
+            let status: DeploymentStatus['status'] = 'NOT_STARTED';
+            if (anyFailed) {
+                status = 'FAILED'
+            } else if (anyInitializing) {
+                status = 'INITIALIZING'
+            } else if (readyPods !== desiredPods) {
+                status = 'INITIALIZING'
+            } else {
+                status = 'READY'
+            }
+
+            const deploymentstatus: DeploymentStatus = {
+                app,
+                status,
+                readyPods,
+                desiredPods,
+                pods: podstatuses
+            }
+            output.push(deploymentstatus);
         }
 
         return output;
@@ -84,7 +127,7 @@ export class K8sNamespaceChecker {
 
     private static getPodstatus(pod: Pod): PodStatus {
         const podId = pod.metadata.name;
-        const version = pod.metadata.labels['app.kubernetes.io/version'] ?? '????';
+        const version = pod.metadata.labels?.['app.kubernetes.io/version'] ?? '????';
         if (!pod.status) {
             return { status: 'INITIALIZING', podId, version }
         }
@@ -93,7 +136,10 @@ export class K8sNamespaceChecker {
             return { status: 'FAILED', reason: 'PodPhaseFailed', podId, version };
         }
 
-        const containerStatuses = pod.status.containerStatuses ?? [];
+        const containerStatuses = [
+            ...(pod.status.containerStatuses ?? []),
+            ...(pod.status.initContainerStatuses ?? []),
+        ];
         for (const containerStatus of containerStatuses) {
             const state = containerStatus.state;
             const waitReason = state?.waiting?.reason ?? '';
@@ -164,5 +210,15 @@ export class K8sChecker {
         }
 
         return errors;
+    }
+}
+
+type Predicate<TIn> = (value: TIn) => Boolean;
+function and<TIn>(...predicates: Array<Predicate<TIn>>): Predicate<TIn> {
+    return (value: TIn)=> {
+        for (const predicate of predicates) {
+            if (!predicate(value)) return false;
+        }
+        return true;
     }
 }
