@@ -9,12 +9,9 @@ const MINUTE = 60 * 1000;
 const TEN_MINUTES = 10 * MINUTE;
 const TEN_SECONDS = 10 * SECOND;
 
-const cluster = core.getInput('cluster', {required: true});
-const appsString = core.getInput('apps', {required: true});
+
+const appsString = core.getMultilineInput('apps', { required: true, trimWhitespace: true })
 const apps: KubernetesAppIdentificator[] = appsString
-    .split(/[\r\n,]+/)
-    .map(it => it.trim())
-    .filter(Boolean)
     .map(it => KubernetesAppIdentificatorSerde.deserialize(it));
 
 const timeoutStr = core.getInput('timeoutMs', {required: false});
@@ -27,8 +24,6 @@ k8sChecker.addApps(apps);
 const errors = k8sChecker.validate()
 if (errors.length > 0) {
     fatal(errors.join('\n'));
-} else if (k8sChecker.getClusters().at(0) !== cluster) {
-    fatal(`Apps not within the cluster you've connected to, expected ${cluster} but got ${k8sChecker.getClusters()}`)
 }
 
 const lineWidth = 40;

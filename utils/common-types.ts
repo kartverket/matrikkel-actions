@@ -31,11 +31,9 @@ export type KubernetesAppIdentificator = {
     readonly appname: string;
     readonly version: string;
 };
-
-
 /**
  * Serde for identifying kubernetes app
- * Format: <name>:<version>
+ * Format: <namespace>:<appname>:<version>
  */
 export const KubernetesAppIdentificatorSerde : Serde<KubernetesAppIdentificator> = new Serde(
     (descriptor) => `${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`,

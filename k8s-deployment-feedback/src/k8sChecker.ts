@@ -12,11 +12,11 @@ export type PodStatus =
     | { podId: string; version: string; status: 'READY'; }
     | { podId: string; version: string; status: 'FAILED'; reason: string; };
 
-class K8sNamespaceChecker {
+export class K8sNamespaceChecker {
     private apps: Set<KubernetesAppIdentificator> = new Set();
     private k8s: Kubectl;
 
-    constructor(private namespace: string) {
+    constructor(namespace: string) {
         this.k8s = new Kubectl(namespace);
     }
 
@@ -127,8 +127,6 @@ class K8sNamespaceChecker {
 export class K8sChecker {
     private intervalMs: number;
     private timeoutMs: number;
-
-    private clustersSeen: Set<string> = new Set();
     private appsToCheck: Record<string, K8sNamespaceChecker> = {};
 
     constructor(intervalMs: number, timeoutMs: number) {
@@ -143,22 +141,9 @@ export class K8sChecker {
     }
 
     public addApp(appDeployment: KubernetesAppIdentificator) {
-        this.clustersSeen.add(appDeployment.cluster);
         const namespaceGroup = this.appsToCheck[appDeployment.namespace] ?? new K8sNamespaceChecker(appDeployment.namespace);
         namespaceGroup.addApp(appDeployment);
         this.appsToCheck[appDeployment.namespace] = namespaceGroup;
-    }
-
-    public getClusters(): string[] {
-        return Array.from(this.clustersSeen);
-    }
-
-    public getNamespaces(): string[] {
-        return Object.keys(this.appsToCheck);
-    }
-
-    public getAppsForNamespace(namespace: string): KubernetesAppIdentificator[] {
-        return this.appsToCheck[namespace]?.getApps() ?? [];
     }
 
     public async checkDeployments() : Promise<DeploymentStatus[]> {
@@ -170,11 +155,6 @@ export class K8sChecker {
 
     public validate(): string[] {
         const errors: string[] = [];
-        if (this.clustersSeen.size === 0) {
-            errors.push(`No apps to deploy`);
-        } else if (this.clustersSeen.size !== 1) {
-            errors.push(`Cannot track deployments across multiple clusters, but found: ${Array.from(this.clustersSeen).join(', ')}`)
-        }
 
         if (!Number.isFinite(this.intervalMs) || this.intervalMs <= 0) {
             errors.push("intervalMs must be a positive number")
