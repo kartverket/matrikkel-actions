@@ -107,6 +107,9 @@ export class K8sNamespaceChecker {
             const anyFailed = podstatuses.some(it => it.status === 'FAILED');
             const anyInitializing = podstatuses.some(it => it.status === 'INITIALIZING');
 
+            core.info(`Got RS status: ${JSON.stringify(replicaset.status)} Desired: ${desiredPods}`);
+            core.info(`Found Pods: ${podstatuses.length}. Init: ${anyInitializing} Failed: ${anyFailed}`);
+
             let status: DeploymentStatus['status'] = 'NOT_STARTED';
             if (anyFailed) {
                 const failed = podstatuses.filter(it => it.status === 'FAILED')
