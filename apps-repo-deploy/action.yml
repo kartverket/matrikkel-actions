@@ -2,7 +2,7 @@ name: Apps repo deploy
 description: Updates apps-repo to deploy changes
 inputs:
   apps:
-    description: Comma separated list of apps to deploy (cluster:namespace:app:version)
+    description: Multiline list of apps to deploy (cluster:namespace:app:version)
     required: true
   dryrun:
     description: Should run be a dryrun, and not commit any changes. (true/false)

@@ -1,0 +1,9 @@
+{
+  "name": "k8s-deployment-feedback",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.ts --target bun --format esm --outfile dist/index.js"
+  }
+}

@@ -1,0 +1,75 @@
+name: Kubernetes deployment feedback
+description: Checks with kubernetes if apps start as expected
+inputs:
+  kubernetes_project_id:
+    description: "Project ID for kubernetes kjører. Eks: kubernetes-dev-94b9"
+    required: true
+  workload_identity_provider:
+    description: "Eks: projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider"
+    required: true
+  service_account:
+    description: "Eks: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com"
+    required: true
+  cluster:
+    description: Kubernetes cluster the deployments target
+    required: true
+  apps:
+    description: Multiline list of apps to deploy (namespace:app:version)
+    required: true
+  timeoutMs:
+    description: Time in milliseconds to wait before failing
+    required: false
+  intervalMs:
+    description: Time in milliseconds to wait before failing
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - uses: octo-sts/action@v1.0.1
+      id: octo-sts
+      with:
+        scope: kartverket/heimdall-apps
+        identity: heimdall
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+      with:
+        repository: kartverket/heimdall-apps
+        ref: main
+        token: ${{ steps.octo-sts.outputs.token }}
+        fetch-depth: 0
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Setup Kubectl
+      uses: azure/setup-kubectl@v4
+
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v3
+      with:
+        install_components: gke-gcloud-auth-plugin
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        project_id: ${{ inputs.kubernetes_project_id }}
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
+    - name: Authenticate to Kubernetes
+      shell: bash
+      run: |
+        gcloud container hub memberships get-credentials ${{ inputs.cluster }} --verbosity debug
+
+    - name: Update versions
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
+        cd "${{ github.action_path }}/.."
+        bun install --frozen-lockfile
+        bun run k8s-deployment-feedback/src/index.ts
+      env:
+        INPUT_APPS: ${{ inputs.apps }}
+        INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
+        INPUT_INTERVALMS: ${{ inputs.intervalMs }}

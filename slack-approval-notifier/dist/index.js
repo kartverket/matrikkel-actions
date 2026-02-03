@@ -40017,6 +40017,15 @@ var ImageDescriptorSerde = new Serde((descriptor) => {
   requireNotNullOrEmpty(version);
   return { name, version };
 });
+var KubernetesAppIdentificatorSerde = new Serde((descriptor) => `${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`, (descriptor) => {
+  const fragments = descriptor.split(":").map((it) => it.trim());
+  require2(fragments.length === 3, () => `Invalid descriptor: ${descriptor}`);
+  const [namespace, appname, version] = fragments;
+  requireNotNullOrEmpty(namespace, () => `Field "namespace" cannot be null or empty`);
+  requireNotNullOrEmpty(appname, () => `Field "appname" cannot be null or empty`);
+  requireNotNullOrEmpty(version, () => `Field "version" cannot be null or empty`);
+  return { namespace, appname, version };
+});
 var AppDeployDescriptorSerde = new Serde((descriptor) => `${descriptor.cluster}:${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`, (descriptor) => {
   const fragments = descriptor.split(":").map((it) => it.trim());
   require2(fragments.length === 4, () => `Invalid descriptor: ${descriptor}`);
