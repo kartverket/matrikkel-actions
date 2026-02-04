@@ -26,6 +26,8 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: actions/checkout@v4
+
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
 
