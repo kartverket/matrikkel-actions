@@ -26,18 +26,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: octo-sts/action@v1.0.1
-      id: octo-sts
-      with:
-        scope: kartverket/heimdall-apps
-        identity: heimdall
-    - name: Checkout the repository
-      uses: actions/checkout@v4
-      with:
-        repository: kartverket/heimdall-apps
-        ref: main
-        token: ${{ steps.octo-sts.outputs.token }}
-        fetch-depth: 0
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
 
