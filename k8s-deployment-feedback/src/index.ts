@@ -18,8 +18,9 @@ const timeoutStr = core.getInput('timeoutMs', {required: false});
 const checkIntervalStr = core.getInput('intervalMs', {required: false});
 const timeoutMs = timeoutStr === '' ? TEN_MINUTES : Number(timeoutStr);
 const checkIntervalMs = checkIntervalStr === '' ? TEN_SECONDS : Number(checkIntervalStr);
+const includeStatefulsets = core.getBooleanInput('includeStatefulSets', { required: false });
 
-const k8sChecker = new K8sChecker(checkIntervalMs, timeoutMs);
+const k8sChecker = new K8sChecker(checkIntervalMs, timeoutMs, includeStatefulsets);
 k8sChecker.addApps(apps);
 const errors = k8sChecker.validate()
 if (errors.length > 0) {
@@ -56,9 +57,10 @@ while (true) {
         '',
     ];
     core.info(lines.join('\n'));
+    core.info('\n'.repeat(3));
 
-
-    const allStatusesResolved = notStarted.length === 0 && initializing.length === 0;
+    const nonCompletedStates = [notStarted, initializing];
+    const allStatusesResolved = nonCompletedStates.every(it => it.length === 0);
     if (allStatusesResolved) {
         if (failed.length > 0) {
             fatal(
