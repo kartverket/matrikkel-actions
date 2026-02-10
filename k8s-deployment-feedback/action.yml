@@ -68,3 +68,4 @@ runs:
         INPUT_APPS: ${{ inputs.apps }}
         INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
         INPUT_INTERVALMS: ${{ inputs.intervalMs }}
+        INPUT_INCLUDESTATEFULSETS: ${{ inputs.includeStatefulSets }}
