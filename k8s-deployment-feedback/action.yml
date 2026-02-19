@@ -69,3 +69,11 @@ runs:
         INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
         INPUT_INTERVALMS: ${{ inputs.intervalMs }}
         INPUT_INCLUDESTATEFULSETS: ${{ inputs.includeStatefulSets }}
+
+    - name: Upload capture artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: k8s-capture-${{ github.action }}
+        path: .capture
+        if-no-files-found: ignore
