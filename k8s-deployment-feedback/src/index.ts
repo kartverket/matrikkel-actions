@@ -1,8 +1,10 @@
 import * as core from '@actions/core';
 import {centerFactory, fatal} from "./utils.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
-import {type DeploymentStatus, K8sChecker} from "./k8sChecker.ts";
+import {type DeploymentStatus, KubectlChecker} from "./KubectlChecker.ts";
 import {groupBy} from "../../utils/fn-utils.ts";
+import {ExecLogger} from "./ExecLogger.ts";
+import {KubectlClient, type KubectlFactory} from "./Kubectl.ts";
 
 const SECOND = 1000;
 const MINUTE = 60 * 1000;
@@ -20,10 +22,15 @@ const timeoutMs = timeoutStr === '' ? TEN_MINUTES : Number(timeoutStr);
 const checkIntervalMs = checkIntervalStr === '' ? TEN_SECONDS : Number(checkIntervalStr);
 const includeStatefulsets = core.getBooleanInput('includeStatefulSets', { required: false });
 
-const k8sChecker = new K8sChecker(checkIntervalMs, timeoutMs, includeStatefulsets);
+const logger = new ExecLogger();
+
+const kubectlFactory: KubectlFactory = (namespace: string) => new KubectlClient(namespace, logger.append.bind(logger))
+
+const k8sChecker = new KubectlChecker(checkIntervalMs, timeoutMs, includeStatefulsets, kubectlFactory);
 k8sChecker.addApps(apps);
 const errors = k8sChecker.validate()
 if (errors.length > 0) {
+    await logger.writeToDir();
     fatal(errors.join('\n'));
 }
 
@@ -34,6 +41,7 @@ const start = Date.now();
 while (true) {
     const now = Date.now();
     if (now - start > timeoutMs) {
+        await logger.writeToDir();
         fatal(`Timeout after ${timeoutMs}ms... Check deployment...`)
     }
 
@@ -63,11 +71,13 @@ while (true) {
     const allStatusesResolved = nonCompletedStates.every(it => it.length === 0);
     if (allStatusesResolved) {
         if (failed.length > 0) {
+            await logger.writeToDir();
             fatal(
                 groupStatus('Feilede deployments', failed).join('\n')
             );
         }
         if (ready.length !== apps.length) {
+            await logger.writeToDir();
             fatal(`Antall klare deployments matchers ikke forventet antall. Forventet ${apps.length}, men fant ${ready.length}`);
         } else {
             core.info('Alle deployments er klare');

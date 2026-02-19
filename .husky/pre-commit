@@ -1,5 +1,5 @@
-#!/bin/bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 bun test
 
@@ -10,7 +10,7 @@ cleanup() {
   echo "Restoring stashed changes..."
   git stash pop || echo "No stash to pop or conflict occurred."
 }
-trap cleanup EXIT
+trap cleanup 0
 
 # Build and stage dist file
 cd slack-approval-notifier

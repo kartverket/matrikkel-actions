@@ -2,13 +2,15 @@ import * as core from "@actions/core";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {
     type Deployment,
+    type ExecInterceptor,
     type KList,
-    Kubectl,
+    type Kubectl,
+    KubectlClient, type KubectlFactory,
     type Metadata,
     type Pod,
     type ReplicaSet,
     type StatefulSet
-} from "./k8s.ts";
+} from "./Kubectl.ts";
 
 export type DeploymentStatus =
     | { app: KubernetesAppIdentificator; status: 'NOT_FOUND'; }
@@ -160,13 +162,17 @@ function deduceDeploymentstatus(app: KubernetesAppIdentificator, readyPods: numb
     };
 }
 
-export class K8sNamespaceChecker {
+class NamespaceChecker {
     private apps: Map<string, KubernetesAppIdentificator> = new Map();
     private k8s: Kubectl;
     private includeStatefulSets: boolean;
 
-    constructor(namespace: string, includeStatefulSets: boolean) {
-        this.k8s = new Kubectl(namespace);
+    constructor(
+        namespace: string,
+        includeStatefulSets: boolean,
+        kubectlFactory: KubectlFactory,
+    ) {
+        this.k8s = kubectlFactory(namespace);
         this.includeStatefulSets = includeStatefulSets;
     }
 
@@ -266,13 +272,18 @@ function getPodstatus(pod: Pod): PodStatus {
     return {status: 'INITIALIZING', podId, version}
 }
 
-export class K8sChecker {
+export class KubectlChecker {
     private intervalMs: number;
     private timeoutMs: number;
     private includeStatefulSets: boolean;
-    private appsToCheck: Record<string, K8sNamespaceChecker> = {};
+    private appsToCheck: Record<string, NamespaceChecker> = {};
 
-    constructor(intervalMs: number, timeoutMs: number, includeStatefulSets: boolean) {
+    constructor(
+        intervalMs: number,
+        timeoutMs: number,
+        includeStatefulSets: boolean,
+        private kubectlFactory: KubectlFactory,
+    ) {
         this.intervalMs = intervalMs;
         this.timeoutMs = timeoutMs;
         this.includeStatefulSets = includeStatefulSets;
@@ -285,7 +296,7 @@ export class K8sChecker {
     }
 
     public addApp(appDeployment: KubernetesAppIdentificator) {
-        const namespaceGroup = this.appsToCheck[appDeployment.namespace] ?? new K8sNamespaceChecker(appDeployment.namespace, this.includeStatefulSets);
+        const namespaceGroup = this.appsToCheck[appDeployment.namespace] ?? new NamespaceChecker(appDeployment.namespace, this.includeStatefulSets, this.kubectlFactory);
         namespaceGroup.addApp(appDeployment);
         this.appsToCheck[appDeployment.namespace] = namespaceGroup;
     }

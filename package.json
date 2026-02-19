@@ -16,6 +16,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@actions/artifact": "^6.1.0",
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
     "@slack/web-api": "^7.13.0"

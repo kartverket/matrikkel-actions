@@ -93,9 +93,23 @@ export type ReplicaSet = {
     };
 };
 
-export class Kubectl {
-    constructor(private namespace: string) {
-    }
+export interface Kubectl {
+    listStatefulSets(selector?: string | Record<string, string>): Promise<KList<StatefulSet>>;
+    listDeployments(selector?: string | Record<string, string>): Promise<KList<Deployment>>;
+    listReplicasets(selector?: string | Record<string, string>): Promise<KList<ReplicaSet>>;
+    listPods(selector?: string | Record<string, string>): Promise<KList<Pod>>;
+    listResource<T>(resource: string, selector?: string | Record<string, string>): Promise<KList<T>>;
+}
+
+export type ExecInterceptor = (args: string[], result: string) => void;
+
+export type KubectlFactory = (namespace: string) => Kubectl;
+
+export class KubectlClient implements Kubectl {
+    constructor(
+        private namespace: string,
+        private execInterceptor: ExecInterceptor = () => {},
+    ) {}
     async listStatefulSets(selector?: string | Record<string, string>): Promise<KList<StatefulSet>> {
         return this.listResource('statefulset', selector);
     }
@@ -113,11 +127,11 @@ export class Kubectl {
     }
 
     async listResource<T>(resource: string, selector?: string | Record<string, string>): Promise<KList<T>> {
-        const strSelector = Kubectl.buildSelector(selector);
+        const strSelector = KubectlClient.buildSelector(selector);
         if (strSelector) {
-            return Kubectl.asJson(['-n', this.namespace, 'get', resource, '-l', strSelector]);
+            return this.asJson(['-n', this.namespace, 'get', resource, '-l', strSelector]);
         } else {
-            return Kubectl.asJson(['-n', this.namespace, 'get', resource]);
+            return this.asJson(['-n', this.namespace, 'get', resource]);
         }
     }
 
@@ -129,7 +143,7 @@ export class Kubectl {
                 .join(',')
     }
 
-    static async asJson(args: string[]) {
+    async asJson(args: string[]) {
         const allArgs = [...args, '-o', 'json']
         core.debug(`kubectl ${allArgs.join(' ')}`);
         const res = await $`kubectl ${allArgs}`.quiet();
@@ -138,6 +152,7 @@ export class Kubectl {
             throw new Error(res.stderr.toString().trim() || "kubectl failed");
         }
         const text = res.stdout.toString();
+        this.execInterceptor(allArgs, text);
         return JSON.parse(text);
     }
 }
