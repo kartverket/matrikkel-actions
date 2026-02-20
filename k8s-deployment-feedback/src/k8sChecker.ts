@@ -112,8 +112,15 @@ const StatefulSetChecker: AppCheckStrategy = (state: NamespaceState) => (app: Ku
 
     const podstatuses = state.pods.items
         .filter(it => {
-            const imagesInPod = it.spec.containers.map(it => it.image);
-            return imagesInPod.some(it => it.endsWith(`/${app.appname}:${app.version}`));
+            const imageAndName = it.spec.containers.map(it => ({
+                name: it.name,
+                image: it.image,
+            }));
+
+            return imageAndName.some(it =>
+                it.name == app.appname &&
+                it.image.endsWith(`:${app.version}`)
+            );
         })
         .map(getPodstatus);
 
