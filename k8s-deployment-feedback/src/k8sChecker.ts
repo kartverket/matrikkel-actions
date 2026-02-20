@@ -106,6 +106,7 @@ const SkiperatorAppChecker: AppCheckStrategy = (state: NamespaceState) => (app: 
 const StatefulSetChecker: AppCheckStrategy = (state: NamespaceState) => (app: KubernetesAppIdentificator) => {
     const statefulset = state.statefulSets?.items?.find(it => it.metadata.name === app.appname);
     if (!statefulset) {
+        core.debug(`[k8s] app ${KubernetesAppIdentificatorSerde.serialize(app)} missing statefulset.`);
         return {status: 'NOT_FOUND', app};
     }
 
