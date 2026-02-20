@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as core from '@actions/core';
 
 export class ExecLogger {
-    private readonly outputDir = ".capture";
+    private readonly outputDir = process.env.CAPTURE_DIR ?? "capture";
     private readonly entries: Map<string, number> = new Map();
 
     append(args: string[], result: string) {

@@ -65,6 +65,7 @@ runs:
         bun install --frozen-lockfile
         bun run k8s-deployment-feedback/src/index.ts
       env:
+        CAPTURE_DIR: ${{ runner.temp }}/k8s-capture-${{ github.job }}-${{ github.run_attempt }}
         INPUT_APPS: ${{ inputs.apps }}
         INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
         INPUT_INTERVALMS: ${{ inputs.intervalMs }}
@@ -74,6 +75,7 @@ runs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: k8s-capture-${{ github.action }}
-        path: .capture
-        if-no-files-found: ignore
+        name: k8s-capture-${{ github.job }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/k8s-capture-${{ github.job }}-${{ github.run_attempt }}
+        if-no-files-found: error
+        retention-days: 7
