@@ -175,7 +175,9 @@ export class K8sNamespaceChecker {
         const applist = this.getApps();
         const appnames = applist.map(it => it.appname);
 
-        const labelSelector = `application.skiperator.no/app-name in (${appnames.join(',')})`;
+        // Statefulsets are controlled by skiperator, hence we cannot filter based on label.
+        // Thus, we need to fetch all data, and manually filter the relevant data.
+        const labelSelector = this.includeStatefulSets ? undefined :`application.skiperator.no/app-name in (${appnames.join(',')})`;
 
         const output: DeploymentStatus[] = [];
 
