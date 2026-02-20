@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as core from '@actions/core';
 
 export class ExecLogger {
     private readonly outputDir = ".capture";
@@ -15,6 +16,7 @@ export class ExecLogger {
         const count = this.entries.get(key) ?? 0;
         const filename = `${hash}-${count}`;
         fs.writeFileSync(`${this.outputDir}/${filename}`, result);
+        core.debug(`Captured exec-cmd: "${argline}", written to ${this.outputDir}/${filename}`)
         this.entries.set(key, count + 1);
     }
 
