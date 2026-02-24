@@ -9,20 +9,28 @@ inputs:
     required: false
     default: "false"
 
+  token:
+    description: Optional STS token passed from caller. If set, no STS token will be fetched.
+    required: false
+
+
 runs:
   using: composite
   steps:
-    - uses: octo-sts/action@v1.0.1
+    - name: Fetch token if none provided in inputs
+      if: ${{ inputs.token == '' }}
       id: octo-sts
+      uses: octo-sts/action@v1.0.1
       with:
         scope: kartverket/heimdall-apps
         identity: heimdall
+
     - name: Checkout the repository
       uses: actions/checkout@v4
       with:
         repository: kartverket/heimdall-apps
         ref: main
-        token: ${{ steps.octo-sts.outputs.token }}
+        token: ${{ inputs.token || steps.octo-sts.outputs.token }}
         fetch-depth: 0
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
