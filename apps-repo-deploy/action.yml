@@ -9,18 +9,29 @@ inputs:
     required: false
     default: "false"
 
+  identity:
+    description: Identity to be used for fetching STS token
+    required: false
+    default: heimdall
+  repository:
+    description: Repository used as the STS token scope
+    required: false
+    default: kartverket/heimdall-apps
+
 runs:
   using: composite
   steps:
-    - uses: octo-sts/action@v1.0.1
+    - name: Fetch STS token
       id: octo-sts
+      uses: octo-sts/action@v1.0.1
       with:
-        scope: kartverket/heimdall-apps
-        identity: heimdall
+        scope: ${{ inputs.repository }}
+        identity: ${{ inputs.identity }}
+
     - name: Checkout the repository
       uses: actions/checkout@v4
       with:
-        repository: kartverket/heimdall-apps
+        repository: ${{ inputs.repository }}
         ref: main
         token: ${{ steps.octo-sts.outputs.token }}
         fetch-depth: 0
