@@ -8,6 +8,14 @@ inputs:
   appDescriptor:
     description: "App descriptor used to locate the version file in the apps repo (cluster:namespace:appname:version)"
     required: true
+  identity:
+    description: Identity to be used for fetching STS token
+    required: false
+    default: heimdall
+  repository:
+    description: Repository used as the STS token scope
+    required: false
+    default: kartverket/heimdall-apps
 outputs:
   messageId:
     description: "Slack message timestamp to be reused for updates"
@@ -22,8 +30,8 @@ runs:
       id: octo-sts
       uses: octo-sts/action@v1.0.1
       with:
-        scope: kartverket/heimdall-apps
-        identity: heimdall
+        scope: ${{ inputs.repository }}
+        identity: ${{ inputs.identity }}
     - name: Slack notify (setup)
       id: slack_notify
       uses: kartverket/matrikkel-actions/slack-approval-notifier/setup@main
