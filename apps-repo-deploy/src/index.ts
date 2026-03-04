@@ -1,14 +1,10 @@
 import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
-import {
-    fatal,
-    type UpdateEntry,
-    createCommitMessage
-} from "./utils.ts";
-import { AppDeployDescriptorSerde, type AppDeployDescriptor, ImageDescriptorSerde } from '../../utils/common-types.ts';
-import {require} from "../../utils/fn-utils.ts";
-import {versionPathForApp} from "../../utils/utils.ts";
+import {createCommitMessage, fatal, type UpdateEntry} from "./utils.ts";
+import {type AppDeployDescriptor, AppDeployDescriptorSerde, ImageDescriptorSerde} from '../../utils/common-types.ts';
+import {require, requireNotNull} from "../../utils/fn-utils.ts";
+import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
@@ -33,26 +29,56 @@ const updateLog: UpdateEntry[] = [];
 
 for (const app of apps) {
     const versionFilePath = versionPathForApp(app);
+    const yamlFilePath = yamlFileForApp(app);
     const versionFile = Bun.file(versionFilePath);
-    const exists = await versionFile.exists();
-    require(exists, () => `Could not find version file ${versionFilePath} (${AppDeployDescriptorSerde.serialize(app)})`);
+    const yamlFile = Bun.file(yamlFilePath);
+    const versionExists = await versionFile.exists();
+    const yamlExists = await yamlFile.exists();
 
-    const imageDescriptorStr = await versionFile.text();
-    const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
-    const newImageDescriptor = {...imageDescriptor, version: app.version};
-    const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
+    if (versionExists) {
+        const imageDescriptorStr = await versionFile.text();
+        const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
+        const newImageDescriptor = {...imageDescriptor, version: app.version};
+        const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
 
-    if (!isDryrun && imageDescriptorStr !== newImageDescriptorStr) {
-        // Atomic writes, to prevent partially written files
-        const tmpFile = `${versionFilePath}.tmp`;
-        await Bun.write(tmpFile, newImageDescriptorStr);
-        await fs.rename(tmpFile, versionFilePath);
+        if (!isDryrun && imageDescriptorStr !== newImageDescriptorStr) {
+            // Atomic writes, to prevent partially written files
+            const tmpFile = `${versionFilePath}.tmp`;
+            await Bun.write(tmpFile, newImageDescriptorStr);
+            await fs.rename(tmpFile, versionFilePath);
+        }
+
+        updateLog.push({...app, originalVersion: imageDescriptor.version})
+        core.info(`${logprefix}Updating ${versionFilePath}`);
+        core.info(`${logprefix}${imageDescriptorStr} -> ${newImageDescriptorStr}`);
+        core.info('');
+    } else if (yamlExists) {
+        const yaml = await yamlFile.text()
+        const imageMatch = yaml.match(/image:\s?("?ghcr.io\/.+:.+"?)/)
+        requireNotNull(imageMatch, () => `Could not find image-reference in yaml for ${AppDeployDescriptorSerde.serialize(app)}`)
+
+        const [, imageDescriptorStr] = imageMatch;
+        requireNotNull(imageDescriptorStr);
+        const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
+        const newImageDescriptor = {...imageDescriptor, version: app.version};
+        const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
+
+        if (!isDryrun && imageDescriptorStr !== newImageDescriptorStr) {
+            // Atomic writes, to prevent partially written files
+            const tmpFile = `${yamlFilePath}.tmp`;
+            await Bun.write(tmpFile, yaml.replace(imageDescriptorStr, newImageDescriptorStr));
+            await fs.rename(tmpFile, yamlFilePath);
+        }
+
+        updateLog.push({...app, originalVersion: imageDescriptor.version})
+        core.info(`${logprefix}Updating ${versionFilePath}`);
+        core.info(`${logprefix}${imageDescriptorStr} -> ${newImageDescriptorStr}`);
+        core.info('');
+
+    } else {
+        throw new Error(`Could not find version file ${versionFilePath} or ${yamlFilePath} (${AppDeployDescriptorSerde.serialize(app)})`)
     }
 
-    updateLog.push({ ...app, originalVersion: imageDescriptor.version })
-    core.info(`${logprefix}Updating ${versionFilePath}`);
-    core.info(`${logprefix}${imageDescriptorStr} -> ${newImageDescriptorStr}`);
-    core.info('');
 }
 
 const hasChanges = (await $`git diff --quiet || echo changed`.text()).includes("changed");
