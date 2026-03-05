@@ -7,3 +7,7 @@ export function trimQuotes(value: string): string {
 export function versionPathForApp(descriptor: AppDeployDescriptor): string {
     return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}/${descriptor.appname}-version`
 }
+
+export function yamlFileForApp(descriptor: AppDeployDescriptor): string {
+    return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}.yaml`
+}
