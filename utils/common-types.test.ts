@@ -111,11 +111,11 @@ describe('AppDeployDescriptorSerde', () => {
     });
 
     it('should throw on invalid format (too few parts)', () => {
-        expect(() => AppDeployDescriptorSerde.deserialize('prod:backend:api')).toThrow('Invalid descriptor');
+        expect(() => AppDeployDescriptorSerde.deserialize('prod:backend:api')).toThrow('Invalid AppDeployDescriptor:');
     });
 
     it('should throw on invalid format (too many parts)', () => {
-        expect(() => AppDeployDescriptorSerde.deserialize('prod:backend:api:1.0.0:extra')).toThrow('Invalid descriptor');
+        expect(() => AppDeployDescriptorSerde.deserialize('prod:backend:api:1.0.0:extra')).toThrow('Invalid AppDeployDescriptor:');
     });
 
     it('should throw on empty cluster', () => {

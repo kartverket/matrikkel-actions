@@ -39,7 +39,7 @@ export const KubernetesAppIdentificatorSerde : Serde<KubernetesAppIdentificator>
     (descriptor) => `${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`,
     (descriptor) => {
         const fragments = descriptor.split(':').map(it => it.trim());
-        require(fragments.length === 3, () => `Invalid descriptor: ${descriptor}`);
+        require(fragments.length === 3, () => `Invalid KubernetesAppIdentificator: ${descriptor}`);
 
         const [namespace, appname, version] = fragments;
         requireNotNullOrEmpty(namespace, () => `Field "namespace" cannot be null or empty`);
@@ -65,7 +65,7 @@ export const AppDeployDescriptorSerde : Serde<AppDeployDescriptor> = new Serde(
     (descriptor) => `${descriptor.cluster}:${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`,
     (descriptor) => {
         const fragments = descriptor.split(':').map(it => it.trim());
-        require(fragments.length === 4, () => `Invalid descriptor: ${descriptor}`);
+        require(fragments.length === 4, () => `Invalid AppDeployDescriptor: ${descriptor}`);
 
         const [cluster, namespace, appname, version] = fragments;
         requireNotNullOrEmpty(cluster, () => `Field "cluster" cannot be null or empty`);
