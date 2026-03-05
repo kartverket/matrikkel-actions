@@ -1,4 +1,4 @@
-import {require, requireNotNullOrEmpty, Serde} from "./fn-utils.ts";
+import {require, requireNotNull, requireNotNullOrEmpty, Serde} from "./fn-utils.ts";
 import { trimQuotes } from './utils.ts';
 
 type ImageDescriptor = {
@@ -76,3 +76,16 @@ export const AppDeployDescriptorSerde : Serde<AppDeployDescriptor> = new Serde(
         return { cluster, namespace, appname, version };
     }
 );
+
+export function extractImageDescriptorFromYaml(
+    app: AppDeployDescriptor,
+    yaml: string
+): ImageDescriptor {
+    const imageMatch = yaml.match(/image:\s?("?ghcr.io\/.+:.+"?)/)
+    requireNotNull(imageMatch, () => `Could not find image-reference in yaml for ${AppDeployDescriptorSerde.serialize(app)}`)
+
+    const [, imageDescriptorStr] = imageMatch;
+    requireNotNull(imageDescriptorStr);
+
+    return ImageDescriptorSerde.deserialize(imageDescriptorStr);
+}

@@ -2,7 +2,12 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {createCommitMessage, fatal, type UpdateEntry} from "./utils.ts";
-import {type AppDeployDescriptor, AppDeployDescriptorSerde, ImageDescriptorSerde} from '../../utils/common-types.ts';
+import {
+    type AppDeployDescriptor,
+    AppDeployDescriptorSerde,
+    extractImageDescriptorFromYaml,
+    ImageDescriptorSerde
+} from '../../utils/common-types.ts';
 import {require, requireNotNull} from "../../utils/fn-utils.ts";
 import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
@@ -54,13 +59,9 @@ for (const app of apps) {
         core.info('');
     } else if (yamlExists) {
         const yaml = await yamlFile.text()
-        const imageMatch = yaml.match(/image:\s?("?ghcr.io\/.+:.+"?)/)
-        requireNotNull(imageMatch, () => `Could not find image-reference in yaml for ${AppDeployDescriptorSerde.serialize(app)}`)
-
-        const [, imageDescriptorStr] = imageMatch;
-        requireNotNull(imageDescriptorStr);
-        const imageDescriptor = ImageDescriptorSerde.deserialize(imageDescriptorStr);
+        const imageDescriptor = extractImageDescriptorFromYaml(app, yaml);
         const newImageDescriptor = {...imageDescriptor, version: app.version};
+        const imageDescriptorStr = ImageDescriptorSerde.serialize(imageDescriptor);
         const newImageDescriptorStr = ImageDescriptorSerde.serialize(newImageDescriptor);
 
         if (!isDryrun && imageDescriptorStr !== newImageDescriptorStr) {

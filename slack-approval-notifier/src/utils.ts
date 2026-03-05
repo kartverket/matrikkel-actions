@@ -1,10 +1,14 @@
-import type { WebClient } from "@slack/web-api";
+import type {WebClient} from "@slack/web-api";
 import type {AnyBlock, ContextBlockElement} from "@slack/types/dist/block-kit/blocks";
 import type {GitHub} from "@actions/github/lib/utils";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
-import {type AppDeployDescriptor, ImageDescriptorSerde} from "../../utils/common-types.ts";
-import {versionPathForApp} from "../../utils/utils.ts";
+import {
+    type AppDeployDescriptor,
+    extractImageDescriptorFromYaml,
+    ImageDescriptorSerde
+} from "../../utils/common-types.ts";
+import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
 export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'CANCELLED';
 export type ApprovalState = {
@@ -145,22 +149,18 @@ export async function getCurrentVersionFromAppsRepo(
     octokit: InstanceType<typeof GitHub>,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
-    try {
-        const response = await octokit.request(
-            "GET /repos/{owner}/{repo}/contents/{path}",
-            {
-                owner: 'kartverket',
-                repo: 'heimdall-apps',
-                path: versionPathForApp(descriptor),
-                ref: 'main',
-                headers: {
-                    "Accept": "application/vnd.github.raw",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                },
-            }
-        );
+    const versionFile = await getCurrentVersionFromVersionFile(octokit, descriptor);
+    if (versionFile != null) return versionFile;
 
-        const content = (response.data as unknown as string)?.toString().trim();
+    return getCurrentVersionFromYamlFile(octokit, descriptor);
+}
+
+async function getCurrentVersionFromVersionFile(
+    octokit: InstanceType<typeof GitHub>,
+    descriptor: AppDeployDescriptor,
+): Promise<string | null> {
+    try {
+        const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor))
         const imageDescriptor = ImageDescriptorSerde.deserialize(content);
         core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
         return imageDescriptor.version;
@@ -169,6 +169,42 @@ export async function getCurrentVersionFromAppsRepo(
         core.warning(`Could not read current version from apps repo: ${message}`);
         return null;
     }
+}
+
+async function getCurrentVersionFromYamlFile(
+    octokit: InstanceType<typeof GitHub>,
+    descriptor: AppDeployDescriptor,
+) {
+    try {
+        const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor))
+        const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
+        core.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
+        return imageDescriptor.version;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        core.warning(`Could not read current version from apps repo (YAML): ${message}`);
+        return null;
+    }
+}
+
+async function fetchHeimdallAppsFile(
+    octokit: InstanceType<typeof GitHub>,
+    path: string,
+): Promise<string> {
+    const response = await octokit.request(
+        "GET /repos/{owner}/{repo}/contents/{path}",
+        {
+            owner: 'kartverket',
+            repo: 'heimdall-apps',
+            path: path,
+            ref: 'main',
+            headers: {
+                "Accept": "application/vnd.github.raw",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        }
+    );
+    return (response.data as unknown as string)?.toString().trim();
 }
 
 export async function getCommitsBetweenVersions(

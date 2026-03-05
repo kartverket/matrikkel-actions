@@ -40005,6 +40005,9 @@ function trimQuotes(value) {
 function versionPathForApp(descriptor) {
   return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}/${descriptor.appname}-version`;
 }
+function yamlFileForApp(descriptor) {
+  return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}.yaml`;
+}
 
 // ../utils/common-types.ts
 var ImageDescriptorSerde = new Serde((descriptor) => {
@@ -40036,6 +40039,13 @@ var AppDeployDescriptorSerde = new Serde((descriptor) => `${descriptor.cluster}:
   requireNotNullOrEmpty(version, () => `Field "version" cannot be null or empty`);
   return { cluster, namespace, appname, version };
 });
+function extractImageDescriptorFromYaml(app, yaml) {
+  const imageMatch = yaml.match(/image:\s?("?ghcr.io\/.+:.+"?)/);
+  requireNotNull(imageMatch, () => `Could not find image-reference in yaml for ${AppDeployDescriptorSerde.serialize(app)}`);
+  const [, imageDescriptorStr] = imageMatch;
+  requireNotNull(imageDescriptorStr);
+  return ImageDescriptorSerde.deserialize(imageDescriptorStr);
+}
 
 // src/utils.ts
 var LaFLUT = {
@@ -40143,18 +40153,14 @@ async function getApprovers(octokit) {
   return approverResponse.data;
 }
 async function getCurrentVersionFromAppsRepo(octokit, descriptor) {
+  const versionFile = await getCurrentVersionFromVersionFile(octokit, descriptor);
+  if (versionFile != null)
+    return versionFile;
+  return getCurrentVersionFromYamlFile(octokit, descriptor);
+}
+async function getCurrentVersionFromVersionFile(octokit, descriptor) {
   try {
-    const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-      owner: "kartverket",
-      repo: "heimdall-apps",
-      path: versionPathForApp(descriptor),
-      ref: "main",
-      headers: {
-        Accept: "application/vnd.github.raw",
-        "X-GitHub-Api-Version": "2022-11-28"
-      }
-    });
-    const content = response.data?.toString().trim();
+    const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor));
     const imageDescriptor = ImageDescriptorSerde.deserialize(content);
     core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
     return imageDescriptor.version;
@@ -40163,6 +40169,31 @@ async function getCurrentVersionFromAppsRepo(octokit, descriptor) {
     core.warning(`Could not read current version from apps repo: ${message}`);
     return null;
   }
+}
+async function getCurrentVersionFromYamlFile(octokit, descriptor) {
+  try {
+    const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor));
+    const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
+    core.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
+    return imageDescriptor.version;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    core.warning(`Could not read current version from apps repo (YAML): ${message}`);
+    return null;
+  }
+}
+async function fetchHeimdallAppsFile(octokit, path) {
+  const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
+    owner: "kartverket",
+    repo: "heimdall-apps",
+    path,
+    ref: "main",
+    headers: {
+      Accept: "application/vnd.github.raw",
+      "X-GitHub-Api-Version": "2022-11-28"
+    }
+  });
+  return response.data?.toString().trim();
 }
 async function getCommitsBetweenVersions(octokit, base, head) {
   if (!base || !head || base === head) {
