@@ -165,7 +165,7 @@ jobs:
       security-events: write
     steps:
       - name: "Run Pharos"
-        uses: kartverket/pharos@v0.5.0
+        uses: kartverket/pharos@112c1589d5022bc0cdf3353cb4c6047aa4a3a26f # v0.6.2
         with:
           image_url: ${{ needs.version.outputs.image }}
           disable_severity_check: true # Remove (defaults to false) for hardening of workflow
