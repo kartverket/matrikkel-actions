@@ -28,7 +28,7 @@ runs:
   steps:
     - name: Mint token for apps repo
       id: octo-sts
-      uses: octo-sts/action@v1.0.1
+      uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
       with:
         scope: ${{ inputs.repository }}
         identity: ${{ inputs.identity }}
