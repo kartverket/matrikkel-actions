@@ -1,0 +1,43 @@
+name: "Find latest GHCR image"
+description: "Henter nyeste GHCR image-tag for en gitt container package"
+
+inputs:
+  image:
+    description: "Navnet på GHCR container package"
+    required: true
+
+outputs:
+  tag:
+    description: "Seneste GHCR image tag"
+    value: ${{ steps.latest-tag.outputs.tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: latest-tag
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        OWNER: ${{ github.repository_owner }}
+        IMAGE: ${{ inputs.image }}
+      run: |
+        echo "Henter siste GHCR-tag for: $IMAGE"
+
+        TAG=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          "/orgs/$OWNER/packages/container/$IMAGE/versions" \
+          --paginate \
+          --jq '
+            map(select(.metadata.container.tags | length > 0))
+            | sort_by(.created_at)
+            | reverse
+            | .[0].metadata.container.tags[0]
+          ')
+
+        if [ -z "$TAG" ]; then
+          echo "Fant ingen gyldige image-tagger i GHCR for $IMAGE"
+          exit 1
+        fi
+
+        echo "Fant tag: $TAG"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
