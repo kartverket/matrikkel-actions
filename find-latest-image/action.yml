@@ -3,7 +3,7 @@ description: "Henter nyeste GHCR image-tag for en gitt container package"
 
 inputs:
   image:
-    description: "Navnet på GHCR container package (ikke repo-navn)"
+    description: "Navnet på GHCR container package"
     required: true
 
 outputs:
