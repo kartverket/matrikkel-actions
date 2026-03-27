@@ -23,18 +23,20 @@ runs:
       run: |
         echo "Henter siste GHCR-tag for: $IMAGE"
 
-        TAG=$(gh api \
-          -H "Accept: application/vnd.github+json" \
-          "/orgs/$OWNER/packages/container/$IMAGE/versions" \
-          --paginate \
-          --slurp \
-          --jq '
-            flatten
-            | map(select(.metadata.container.tags | length > 0))
-            | sort_by(.created_at)
-            | reverse
-            | .[0].metadata.container.tags[0]
-          ')
+        TAG=$(
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/$OWNER/packages/container/$IMAGE/versions" \
+            --paginate \
+            --slurp \
+          | jq -r '
+              flatten
+              | map(select(.metadata.container.tags | length > 0))
+              | sort_by(.created_at)
+              | reverse
+              | .[0].metadata.container.tags[0]
+            '
+        )
 
         if [ -z "$TAG" ]; then
           echo "Fant ingen gyldige image-tagger i GHCR for $IMAGE"
