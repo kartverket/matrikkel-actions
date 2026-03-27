@@ -27,8 +27,10 @@ runs:
           -H "Accept: application/vnd.github+json" \
           "/orgs/$OWNER/packages/container/$IMAGE/versions" \
           --paginate \
+          --slurp \
           --jq '
-            map(select(.metadata.container.tags | length > 0))
+            flatten
+            | map(select(.metadata.container.tags | length > 0))
             | sort_by(.created_at)
             | reverse
             | .[0].metadata.container.tags[0]
@@ -40,4 +42,4 @@ runs:
         fi
 
         echo "Fant tag: $TAG"
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
