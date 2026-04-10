@@ -3,6 +3,7 @@ import {centerFactory, fatal} from "./utils.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {type DeploymentStatus, K8sChecker} from "./k8sChecker.ts";
 import {groupBy} from "../../utils/fn-utils.ts";
+import {createShell} from "../../utils/shell.ts";
 
 const SECOND = 1000;
 const MINUTE = 60 * 1000;
@@ -19,8 +20,11 @@ const checkIntervalStr = core.getInput('intervalMs', {required: false});
 const timeoutMs = timeoutStr === '' ? TEN_MINUTES : Number(timeoutStr);
 const checkIntervalMs = checkIntervalStr === '' ? TEN_SECONDS : Number(checkIntervalStr);
 const includeStatefulsets = core.getBooleanInput('includeStatefulSets', { required: false });
+const shellRecordingPath = process.env.SHELL_RECORDING_PATH;
 
-const k8sChecker = new K8sChecker(checkIntervalMs, timeoutMs, includeStatefulsets);
+const shell = createShell({ mode: 'record', recordingLogPath: shellRecordingPath });
+
+const k8sChecker = new K8sChecker(shell, checkIntervalMs, timeoutMs, includeStatefulsets);
 k8sChecker.addApps(apps);
 const errors = k8sChecker.validate()
 if (errors.length > 0) {

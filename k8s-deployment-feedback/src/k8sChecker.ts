@@ -9,6 +9,7 @@ import {
     type ReplicaSet,
     type StatefulSet
 } from "./k8s.ts";
+import type {Shell} from "../../utils/shell.ts";
 
 export type DeploymentStatus =
     | { app: KubernetesAppIdentificator; status: 'NOT_FOUND'; }
@@ -165,8 +166,12 @@ export class K8sNamespaceChecker {
     private k8s: Kubectl;
     private includeStatefulSets: boolean;
 
-    constructor(namespace: string, includeStatefulSets: boolean) {
-        this.k8s = new Kubectl(namespace);
+    constructor(
+        shell: Shell,
+        namespace: string,
+        includeStatefulSets: boolean,
+    ) {
+        this.k8s = new Kubectl(shell, namespace);
         this.includeStatefulSets = includeStatefulSets;
     }
 
@@ -267,12 +272,19 @@ function getPodstatus(pod: Pod): PodStatus {
 }
 
 export class K8sChecker {
+    private shell: Shell;
     private intervalMs: number;
     private timeoutMs: number;
     private includeStatefulSets: boolean;
     private appsToCheck: Record<string, K8sNamespaceChecker> = {};
 
-    constructor(intervalMs: number, timeoutMs: number, includeStatefulSets: boolean) {
+    constructor(
+        shell: Shell,
+        intervalMs: number,
+        timeoutMs: number,
+        includeStatefulSets: boolean
+    ) {
+        this.shell = shell;
         this.intervalMs = intervalMs;
         this.timeoutMs = timeoutMs;
         this.includeStatefulSets = includeStatefulSets;
@@ -285,7 +297,7 @@ export class K8sChecker {
     }
 
     public addApp(appDeployment: KubernetesAppIdentificator) {
-        const namespaceGroup = this.appsToCheck[appDeployment.namespace] ?? new K8sNamespaceChecker(appDeployment.namespace, this.includeStatefulSets);
+        const namespaceGroup = this.appsToCheck[appDeployment.namespace] ?? new K8sNamespaceChecker(this.shell, appDeployment.namespace, this.includeStatefulSets);
         namespaceGroup.addApp(appDeployment);
         this.appsToCheck[appDeployment.namespace] = namespaceGroup;
     }
