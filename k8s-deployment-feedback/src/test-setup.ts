@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 import {Kubectl} from "./k8s.ts";
-import {createShell} from "../../utils/shell.ts";
+import {createShell} from "@nutgaard/bun-recording-shell";
 
 const SECOND = 1000;
 const MINUTE = 60 * 1000;

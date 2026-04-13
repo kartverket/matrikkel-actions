@@ -9,7 +9,7 @@ import {
     type ReplicaSet,
     type StatefulSet
 } from "./k8s.ts";
-import type {Shell} from "../../utils/shell.ts";
+import type {Shell} from "@nutgaard/bun-recording-shell";
 
 export type DeploymentStatus =
     | { app: KubernetesAppIdentificator; status: 'NOT_FOUND'; }

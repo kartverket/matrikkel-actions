@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import type {Shell} from "../../utils/shell.ts";
+import type {Shell} from "@nutgaard/bun-recording-shell";
 
 export type KList<TResource> = {
     kind: "List",
