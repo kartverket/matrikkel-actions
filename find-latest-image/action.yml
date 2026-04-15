@@ -22,11 +22,12 @@ runs:
         IMAGE: ${{ inputs.image }}
       run: |
         echo "Henter siste GHCR-tag for: $IMAGE"
-
+        
+        ENCODED_IMAGE=$(echo $IMAGE | jq -Rr @uri)
         TAG=$(
           gh api \
             -H "Accept: application/vnd.github+json" \
-            "/orgs/$OWNER/packages/container/$IMAGE/versions" \
+            "/orgs/$OWNER/packages/container/$ENCODED_IMAGE/versions" \
             --paginate \
             --slurp \
           | jq -r '
