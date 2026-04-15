@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import {$} from "bun";
+import type {Shell} from "@nutgaard/bun-recording-shell";
 
 export type KList<TResource> = {
     kind: "List",
@@ -94,7 +94,10 @@ export type ReplicaSet = {
 };
 
 export class Kubectl {
-    constructor(private namespace: string) {
+    constructor(
+        private shell: Shell,
+        private namespace: string
+    ) {
     }
     async listStatefulSets(selector?: string | Record<string, string>): Promise<KList<StatefulSet>> {
         return this.listResource('statefulset', selector);
@@ -115,9 +118,9 @@ export class Kubectl {
     async listResource<T>(resource: string, selector?: string | Record<string, string>): Promise<KList<T>> {
         const strSelector = Kubectl.buildSelector(selector);
         if (strSelector) {
-            return Kubectl.asJson(['-n', this.namespace, 'get', resource, '-l', strSelector]);
+            return this.asJson(['-n', this.namespace, 'get', resource, '-l', strSelector]);
         } else {
-            return Kubectl.asJson(['-n', this.namespace, 'get', resource]);
+            return this.asJson(['-n', this.namespace, 'get', resource]);
         }
     }
 
@@ -129,10 +132,10 @@ export class Kubectl {
                 .join(',')
     }
 
-    static async asJson(args: string[]) {
+    async asJson(args: string[]) {
         const allArgs = [...args, '-o', 'json']
         core.debug(`kubectl ${allArgs.join(' ')}`);
-        const res = await $`kubectl ${allArgs}`.quiet();
+        const res = await this.shell`kubectl ${allArgs}`.quiet();
         if (res.exitCode !== 0) {
             core.debug(`kubectl stderr: ${res.stderr.toString().trim()}`);
             throw new Error(res.stderr.toString().trim() || "kubectl failed");

@@ -62,6 +62,7 @@ runs:
         set -euo pipefail
         # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
         cd "${{ github.action_path }}/.."
+        mkdir -p "${RUNNER_TEMP}/k8s-deployment-feedback"
         bun install --frozen-lockfile
         bun run k8s-deployment-feedback/src/index.ts
       env:
@@ -69,3 +70,13 @@ runs:
         INPUT_TIMEOUTMS: ${{ inputs.timeoutMs }}
         INPUT_INTERVALMS: ${{ inputs.intervalMs }}
         INPUT_INCLUDESTATEFULSETS: ${{ inputs.includeStatefulSets }}
+        SHELL_RECORDING_PATH: ${{ runner.temp }}/k8s-deployment-feedback/shell-recordings.ndjson
+
+    - name: Upload shell recordings
+      if: ${{ always() && (failure() || cancelled()) }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: k8s-deployment-feedback-shell-recordings-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        path: ${{ runner.temp }}/k8s-deployment-feedback/
+        if-no-files-found: ignore
+        retention-days: 7
