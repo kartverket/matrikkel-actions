@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import type {Shell} from "@nutgaard/bun-recording-shell";
+import {withRetry, withTimeout} from "../../utils/async-utils.ts";
 
 export type KList<TResource> = {
     kind: "List",
@@ -135,12 +136,15 @@ export class Kubectl {
     async asJson(args: string[]) {
         const allArgs = [...args, '-o', 'json']
         core.debug(`kubectl ${allArgs.join(' ')}`);
-        const res = await this.shell`kubectl ${allArgs}`.quiet();
-        if (res.exitCode !== 0) {
-            core.debug(`kubectl stderr: ${res.stderr.toString().trim()}`);
-            throw new Error(res.stderr.toString().trim() || "kubectl failed");
-        }
-        const text = res.stdout.toString();
-        return JSON.parse(text);
+
+        return withRetry({ count: 2, delayMs: 2_000 }, async () => {
+            const res = await withTimeout(30_000, () => this.shell`kubectl ${allArgs}`.quiet());
+            if (res.exitCode !== 0) {
+                core.error(`kubectl stderr: ${res.stderr.toString().trim()}`);
+                throw new Error(res.stderr.toString().trim() || "kubectl failed");
+            }
+            const text = res.stdout.toString()
+            return JSON.parse(text);
+        });
     }
 }
