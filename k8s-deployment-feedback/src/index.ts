@@ -75,7 +75,7 @@ while (true) {
             fatal(`Antall klare deployments matchers ikke forventet antall. Forventet ${apps.length}, men fant ${ready.length}`);
         } else {
             core.info('Alle deployments er klare');
-            break;
+            process.exit(0);
         }
     }
 
