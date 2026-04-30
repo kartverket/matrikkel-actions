@@ -17,6 +17,7 @@ export type ApprovalState = {
     environment: string;
     commits: Array<{ gitsha: string; message: string; }>;
     approver?: string;
+    approvedAt?: Date;
 }
 
 export type LaF = { icon: string; color: string; text: string; }
@@ -91,6 +92,10 @@ function buildMessage(channel: string, state: ApprovalState) {
         "type": "mrkdwn",
         "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
     };
+    const approvedAtElement: ContextBlockElement | null = state.approvedAt ? {
+        "type": "mrkdwn",
+        "text": `*Prodsatt:* Kl ${new Date().toLocaleTimeString('nb-no')}`
+    } : null;
 
     return {
         channel,
@@ -118,6 +123,7 @@ function buildMessage(channel: string, state: ApprovalState) {
                                 "text": `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
                             },
                             approverElement,
+                            approvedAtElement,
                         ]
                     }
                 ].filter(it => it != null)
