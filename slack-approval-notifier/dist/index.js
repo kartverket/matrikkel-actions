@@ -40141,7 +40141,7 @@ function buildMessage(channel, state) {
               },
               approverElement,
               approvedAtElement
-            ]
+            ].filter((it) => it != null)
           }
         ].filter((it) => it != null)
       }

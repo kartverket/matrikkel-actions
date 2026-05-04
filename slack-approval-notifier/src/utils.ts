@@ -124,7 +124,7 @@ function buildMessage(channel: string, state: ApprovalState) {
                             },
                             approverElement,
                             approvedAtElement,
-                        ]
+                        ].filter(it => it != null)
                     }
                 ].filter(it => it != null)
             }
