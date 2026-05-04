@@ -40302,11 +40302,14 @@ async function run() {
     const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
+      core2.info(`[DEBUG] post: ${isPostStep} approvedAt: ${approvedAt}`);
       if (approvedAt === "") {
         const now = new Date;
         state.approvedAt = now;
         core2.saveState("approvedAt", now.toISOString());
+        core2.info(`[DEBUG] ApprovedAT sat to ${now.toISOString()}`);
       } else {
+        core2.info(`[DEBUG] ApprovedAT restored from ${approvedAt}`);
         state.approvedAt = new Date(approvedAt);
       }
     }

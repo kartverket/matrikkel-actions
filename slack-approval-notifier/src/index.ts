@@ -103,11 +103,14 @@ async function run() {
         const approvers = await getApprovers(octokit);
         if (approvers.length > 0) {
             state.approver = approvers[0]!.user.login;
+            core.info(`[DEBUG] post: ${isPostStep} approvedAt: ${approvedAt}`);
             if (approvedAt === '') {
                 const now = new Date();
                 state.approvedAt = now;
                 core.saveState('approvedAt', now.toISOString());
+                core.info(`[DEBUG] ApprovedAT sat to ${now.toISOString()}`);
             } else {
+                core.info(`[DEBUG] ApprovedAT restored from ${approvedAt}`);
                 state.approvedAt = new Date(approvedAt);
             }
         }
