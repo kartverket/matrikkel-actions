@@ -55,7 +55,7 @@ async function run() {
         const isUpdateStep = messageId !== '';
 
         const isPostStep = core.getState('is_post') == 'true';
-        const approvedAt = core.getInput('approvedAt', { required: false });
+        const approvedAt = core.getState('approvedAt');
         core.saveState('is_post', 'true');
 
         const token = process.env.SLACK_BOT_TOKEN;

@@ -40265,7 +40265,7 @@ async function run() {
     const messageId = core2.getInput("messageId", { required: false });
     const isUpdateStep = messageId !== "";
     const isPostStep = core2.getState("is_post") == "true";
-    const approvedAt = core2.getInput("approvedAt", { required: false });
+    const approvedAt = core2.getState("approvedAt");
     core2.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
     if (!token) {
