@@ -55,6 +55,7 @@ async function run() {
         const isUpdateStep = messageId !== '';
 
         const isPostStep = core.getState('is_post') == 'true';
+        const approvedAt = core.getState('approvedAt');
         core.saveState('is_post', 'true');
 
         const token = process.env.SLACK_BOT_TOKEN;
@@ -78,7 +79,7 @@ async function run() {
             environment: core.getInput('environment', {required: true}),
             version: appsRepoDescriptor.version,
             status: isPostStep ? readStatus() : (isUpdateStep ? 'RUNNING' : 'AWAITING'),
-            commits: readCommitsFromState() ?? []
+            commits: readCommitsFromState() ?? [],
         }
 
         core.info(`IsPostStep: ${isPostStep}`)
@@ -102,6 +103,13 @@ async function run() {
         const approvers = await getApprovers(octokit);
         if (approvers.length > 0) {
             state.approver = approvers[0]!.user.login;
+            if (approvedAt === '') {
+                const now = new Date();
+                state.approvedAt = now;
+                core.saveState('approvedAt', now.toISOString());
+            } else {
+                state.approvedAt = new Date(approvedAt);
+            }
         }
 
         let newMessageId: string | undefined;

@@ -40110,6 +40110,10 @@ function buildMessage(channel, state) {
     type: "mrkdwn",
     text: `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
   };
+  const approvedAtElement = state.approvedAt ? {
+    type: "mrkdwn",
+    text: `*Prodsatt:* Kl ${new Date().toLocaleTimeString("nb-no")}`
+  } : null;
   return {
     channel,
     attachments: [
@@ -40135,7 +40139,8 @@ function buildMessage(channel, state) {
                 type: "mrkdwn",
                 text: `*Id:* <https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|${github.context.runId}>`
               },
-              approverElement
+              approverElement,
+              approvedAtElement
             ]
           }
         ].filter((it) => it != null)
@@ -40260,6 +40265,7 @@ async function run() {
     const messageId = core2.getInput("messageId", { required: false });
     const isUpdateStep = messageId !== "";
     const isPostStep = core2.getState("is_post") == "true";
+    const approvedAt = core2.getState("approvedAt");
     core2.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
     if (!token) {
@@ -40296,6 +40302,13 @@ async function run() {
     const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
+      if (approvedAt === "") {
+        const now = new Date;
+        state.approvedAt = now;
+        core2.saveState("approvedAt", now.toISOString());
+      } else {
+        state.approvedAt = new Date(approvedAt);
+      }
     }
     let newMessageId;
     if (messageId) {
