@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #6.0.2
         with:
           ref: test-main
       - name: Update replicas
@@ -26,7 +26,7 @@ jobs:
           # Update replicas
           echo '${{ inputs.replicas }}' > src/replicas
           git add src/replicas
-      - uses: kartverket/matrikkel-actions/create-pr@main
+      - uses: kartverket/matrikkel-actions/create-pr@a87c1231900aa63f502eef92f9f5960c63c61e69
         with:
           github_token: ${{ github.token }}
           commit_message: "Scale replicas to ${{ inputs.replicas }}"
