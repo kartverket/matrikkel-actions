@@ -1,0 +1,132 @@
+name: Skip Deploy
+description: Deploy app to Skip
+inputs:
+  apps_repo:
+    description: ArgoCD apps-repo to update
+    required: true
+  apps_repo_default_branch:
+    description: Default branch in ArgoCD apps-repo to update
+    required: false
+    default: main
+  identity:
+    description: Identity to be used for fetching STS token
+    required: true
+  kubernetes_project_id:
+    description: "Project ID for kubernetes kjører. Eks: kubernetes-dev-94b9"
+    required: true
+  workload_identity_provider:
+    description: "Eks: projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider"
+    required: true
+  service_account:
+    description: "Eks: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com"
+    required: true
+  cluster:
+    description: Kubernetes cluster the deployments target
+    required: true
+  dry_run:
+    description: If true, run templating and validate input, but do not actually make any requests.
+    required: false
+    default: "false"
+  print_payload:
+    description: If true, print templated resources to standard output.
+    required: false
+    default: "false"
+  resource:
+    description: Comma-separated list of files containing Kubernetes resources. Must be JSON or YAML format.
+    required: true
+  timeout:
+    description: Time to wait for deployment completion, especially when using WAIT.
+    required: false
+    default: "10m"
+  wait:
+    description: Block until deployment has completed with either success, failure or error state.
+    required: false
+    default: "true"
+  var:
+    description: Comma-separated list of template variables in the form key=value. Will overwrite any identical template variable in the VARS file.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch STS token
+      id: octo-sts
+      uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
+      with:
+        scope: ${{ inputs.apps_repo }}
+        identity: ${{ inputs.identity }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Checkout the apps-repo
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ inputs.apps_repo }}
+        ref: ${{ inputs.apps_repo_default_branch }}
+        token: ${{ steps.octo-sts.outputs.token }}
+        fetch-depth: 0
+        path: apps-repo
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    - name: Update apps-repo
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
+        cd "${{ github.action_path }}/.."
+        bun install --frozen-lockfile
+        bun run skip-deploy/src/update.ts
+      env:
+        DRY_RUN: ${{ inputs.dry_run }}
+        PRINT_PAYLOAD: ${{ inputs.print_payload }}
+        CLUSTER: ${{ inputs.cluster }}
+        RESOURCE: ${{ inputs.resource }}
+        VAR: ${{ inputs.var }}
+
+    - name: Setup Kubectl
+      uses: azure/setup-kubectl@v4
+
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v3
+      with:
+        install_components: gke-gcloud-auth-plugin
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        project_id: ${{ inputs.kubernetes_project_id }}
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
+    - name: Authenticate to Kubernetes
+      shell: bash
+      run: |
+        gcloud container hub memberships get-credentials ${{ inputs.cluster }} --verbosity debug
+
+    - name: Update versions
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Install dependencies from repo root so shared packages (e.g. @actions/core) are available
+        cd "${{ github.action_path }}/.."
+        mkdir -p "${RUNNER_TEMP}/k8s-deployment-feedback"
+        bun install --frozen-lockfile
+        bun run skip-deploy/src/wait.ts
+      env:
+        CLUSTER: ${{ inputs.cluster }}
+        RESOURCE: ${{ inputs.resource }}
+        VAR: ${{ inputs.var }}
+        TIMEOUT: ${{ inputs.timeout }}
+        SHELL_RECORDING_PATH: ${{ runner.temp }}/k8s-deployment-feedback/shell-recordings.ndjson
+
+    - name: Upload shell recordings
+      if: ${{ always() && (failure() || cancelled()) }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: k8s-deployment-feedback-shell-recordings-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        path: ${{ runner.temp }}/k8s-deployment-feedback/
+        if-no-files-found: ignore
+        retention-days: 7
