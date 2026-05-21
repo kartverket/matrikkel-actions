@@ -4,9 +4,9 @@ kind: "Component"
 metadata:
   name: "matrikkel-actions"
   tags:
-  - "internal"
+  - "public"
 spec:
   type: "ops"
   lifecycle: "production"
   owner: "heimdall"
-  system: "matrikkel"
+  system: "m22"
