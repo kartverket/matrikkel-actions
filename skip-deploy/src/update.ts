@@ -2,13 +2,12 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
-import {getInput} from "@actions/core";
-import {fatal} from "../../utils/utils.ts";
+import {fatal, getInput} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
     // Ensure file operations target the checked-out repo
-    process.chdir(workspace);
+    process.chdir(`${workspace}/apps-repo`);
 }
 
 const isDryrun = getInput('dry_run') === 'true';
@@ -36,7 +35,7 @@ for (const resource of resources) {
     }
 }
 
-const hasChanges = (await $`git diff --quiet || echo changed`.text()).includes("changed");
+const hasChanges = (await $`git status --porcelain`.text()).trim().length > 0;
 if (!hasChanges) {
     core.info(`No changes detected; skipping commit`);
 } else if (isDryrun) {
@@ -45,7 +44,8 @@ if (!hasChanges) {
     try {
         await $`git config user.name "Heimdall CI"`;
         await $`git config user.email "spam@kartverket.no"`;
-        await $`git commit -am "Deploy of "`;
+        await $`git add env`;
+        await $`git commit -m "Deploy of apps"`;
         await $`git fetch origin main`;
         await $`git rebase origin/main`;
         await $`git push origin main`;
