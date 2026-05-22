@@ -2,6 +2,7 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
+import {expandKubernetesManifests, redactSensitiveValues} from "./expansion.ts";
 import {fatal, getInput} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
@@ -19,18 +20,22 @@ for (const resource of resources) {
     const content = await file.text();
     for (const vars of varMatrix) {
         const output = interpolateResource({resource: content, vars});
-        const file = findFileFor(cluster, output);
+        const expandedManifests = await expandKubernetesManifests(output);
 
-        if (isPrintPayload) {
-            core.info(`${file}:`);
-            core.info(output + '\n\n');
-        }
+        for (const expandedManifest of expandedManifests) {
+            const file = findFileFor(cluster, expandedManifest.manifest);
 
-        if (!isDryrun) {
-            // Atomic writes, to prevent partially written files
-            const tmp = `${file}.tmp`;
-            await Bun.write(tmp, output);
-            await fs.rename(tmp, file);
+            if (isPrintPayload) {
+                core.info(`${file}:`);
+                core.info(redactSensitiveValues(expandedManifest.manifest, expandedManifest.sensitiveValues) + '\n\n');
+            }
+
+            if (!isDryrun) {
+                // Atomic writes, to prevent partially written files
+                const tmp = `${file}.tmp`;
+                await Bun.write(tmp, expandedManifest.manifest);
+                await fs.rename(tmp, file);
+            }
         }
     }
 }

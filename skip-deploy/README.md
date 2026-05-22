@@ -141,6 +141,64 @@ env/<cluster>/<namespace>/my-app.yaml
 
 If `var` is omitted, each resource is processed once without interpolation variables. Any remaining `{{ ... }}` placeholder then fails the action.
 
+## Manifest Expansion
+
+After templating, `skip-deploy` expands a small set of convenience fields into regular Skiperator and Kubernetes resources before writing to the apps repo.
+
+### GSM environment secrets
+
+Use `gsmSecretName` on `spec.env` entries to fetch values from Google Secret Manager through External Secrets:
+
+```yaml
+spec:
+  env:
+    - name: DB_ADMIN_PASSWORD
+      gsmSecretName: prod-matrikkel-db-admin-password
+```
+
+The expanded apps-repo file contains one generated `ExternalSecret` for the application, named `<app>-externalsecrets`, targeting `<app>-secrets`. The application gets `envFrom: [{ secret: <app>-secrets }]`, and the shortcut `env` entry is removed from the final Application manifest.
+
+### Database outbound policies
+
+Database host and IP must not be committed in application source repositories. Declare a non-sensitive GSM metadata secret instead:
+
+```yaml
+spec:
+  databases:
+    - name: primary
+      gsmMetadataSecret: prod-matrikkel-db-metadata
+```
+
+`skip-deploy` reads that GSM secret from `kubernetes_project_id`. The secret payload must be JSON:
+
+```json
+{
+  "host": "database-host",
+  "ip": "10.0.0.12",
+  "ports": [
+    { "name": "sql", "port": 5432, "protocol": "TCP" }
+  ]
+}
+```
+
+The resolved values are merged into `spec.accessPolicy.outbound.external` in the apps repo output. Resolved host and IP values are registered as GitHub Actions secrets and redacted from `print_payload` logs.
+
+### Generic outbound policies
+
+Non-sensitive outbound rules can be written under `spec.outbound`:
+
+```yaml
+spec:
+  outbound:
+    - host: login.microsoftonline.com
+      ports:
+        - name: https
+          port: 443
+          protocol: HTTPS
+```
+
+These entries are merged into `spec.accessPolicy.outbound.external`, and `spec.outbound` is removed from the final Application manifest.
+
 ## Prerequisites
 
 - The caller workflow must grant `id-token: write`.

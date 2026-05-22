@@ -71,6 +71,18 @@ runs:
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
 
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v3
+      with:
+        install_components: gke-gcloud-auth-plugin
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        project_id: ${{ inputs.kubernetes_project_id }}
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
     - name: Update apps-repo
       shell: bash
       run: |
@@ -83,26 +95,13 @@ runs:
         DRY_RUN: ${{ inputs.dry_run }}
         PRINT_PAYLOAD: ${{ inputs.print_payload }}
         CLUSTER: ${{ inputs.cluster }}
+        KUBERNETES_PROJECT_ID: ${{ inputs.kubernetes_project_id }}
         RESOURCE: ${{ inputs.resource }}
         VAR: ${{ inputs.var }}
 
     - name: Setup Kubectl
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       uses: azure/setup-kubectl@v4
-
-    - name: Setup Cloud SDK
-      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
-      uses: google-github-actions/setup-gcloud@v3
-      with:
-        install_components: gke-gcloud-auth-plugin
-
-    - name: Authenticate to GCP
-      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
-      uses: google-github-actions/auth@v3
-      with:
-        project_id: ${{ inputs.kubernetes_project_id }}
-        workload_identity_provider: ${{ inputs.workload_identity_provider }}
-        service_account: ${{ inputs.service_account }}
 
     - name: Authenticate to Kubernetes
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
@@ -122,6 +121,7 @@ runs:
         bun run skip-deploy/src/wait.ts
       env:
         CLUSTER: ${{ inputs.cluster }}
+        KUBERNETES_PROJECT_ID: ${{ inputs.kubernetes_project_id }}
         RESOURCE: ${{ inputs.resource }}
         VAR: ${{ inputs.var }}
         TIMEOUT: ${{ inputs.timeout }}

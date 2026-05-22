@@ -1,4 +1,5 @@
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
+import {expandKubernetesManifests} from "./expansion.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
 import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
@@ -22,7 +23,8 @@ for (const resource of resources) {
     const content = await file.text();
     for (const vars of varMatrix) {
         const output = interpolateResource({resource: content, vars});
-        descriptorsToWaitFor.push(findAppDescriptor(output));
+        const expandedManifests = await expandKubernetesManifests(output);
+        descriptorsToWaitFor.push(...expandedManifests.map(it => findAppDescriptor(it.manifest)));
     }
 }
 
