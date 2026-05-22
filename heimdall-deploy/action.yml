@@ -1,0 +1,58 @@
+name: Skip Deploy
+description: Deploy app to Skip
+inputs:
+  cluster:
+    description: Kubernetes cluster the deployments target
+    required: true
+  dry_run:
+    description: If true, run templating and validate input, but do not actually make any requests.
+    required: false
+    default: "false"
+  print_payload:
+    description: If true, print templated resources to standard output.
+    required: false
+    default: "false"
+  resource:
+    description: Comma-separated list of files containing Kubernetes resources. Must be JSON or YAML format.
+    required: true
+  timeout:
+    description: Time to wait for deployment completion, especially when using WAIT.
+    required: false
+    default: "10m"
+  wait:
+    description: Block until deployment has completed with either success, failure or error state.
+    required: false
+    default: "true"
+  var:
+    description: Comma-separated list of template variables in the form key=value. Will overwrite any identical template variable in the VARS file.
+    required: false
+
+env:
+  DEV_CLUSTER_NAME: atkv3-dev-user-cluster
+  DEV_KUBERNETES_PROJECT_ID: kubernetes-dev-94b9
+  DEV_SERVICE_ACCOUNT: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com
+  DEV_WORKLOAD_IDENTITY_PROVIDER: projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider
+  PROD_CLUSTER_NAME: atkv3-prod-user-cluster
+  PROD_KUBERNETES_PROJECT_ID: kubernetes-prod-e4a2
+  PROD_SERVICE_ACCOUNT: matrikkel-deploy@matrikkel-prod-91b2.iam.gserviceaccount.com
+  PROD_WORKLOAD_IDENTITY_PROVIDER: projects/367207507054/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy
+      uses: kartverket/matrikkel-actions/skip-deploy@skip-deploy
+      with:
+        apps_repo: kartverket/heimdall-apps
+        apps_repo_default_branch: main
+        identity: ${{ github.event.repository.name }}
+        kubernetes_project_id: ${{ inputs.cluster == env.DEV_CLUSTER_NAME && env.DEV_KUBERNETES_PROJECT_ID || env.PROD_KUBERNETES_PROJECT_ID }}
+        workload_identity_provider: ${{ inputs.cluster == env.DEV_CLUSTER_NAME && env.DEV_WORKLOAD_IDENTITY_PROVIDER || env.PROD_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ inputs.cluster == env.DEV_CLUSTER_NAME && env.DEV_SERVICE_ACCOUNT || env.PROD_SERVICE_ACCOUNT }}
+        cluster: ${{ inputs.cluster }}
+        dry_run: ${{ inputs.dry_run }}
+        print_payload: ${{ inputs.print_payload }}
+        resource: ${{ inputs.resource }}
+        timeout: ${{ inputs.timeout }}
+        wait: ${{ inputs.wait }}
+        var: ${{ inputs.var }}
