@@ -1,5 +1,5 @@
 name: Skip Deploy
-description: Deploy app to Skip
+description: Render Skip resources into an apps repo and optionally wait for Kubernetes rollout
 inputs:
   apps_repo:
     description: ArgoCD apps-repo to update
@@ -32,7 +32,7 @@ inputs:
     required: false
     default: "false"
   resource:
-    description: Comma-separated list of files containing Kubernetes resources. Must be JSON or YAML format.
+    description: Comma-separated list of resource files from the caller repository. Must be JSON or YAML format.
     required: true
   timeout:
     description: Time to wait for deployment completion, especially when using WAIT.
@@ -43,7 +43,7 @@ inputs:
     required: false
     default: "true"
   var:
-    description: Comma-separated list of template variables in the form key=value. Will overwrite any identical template variable in the VARS file.
+    description: Newline-separated variable rows. Each row is comma-separated key=value pairs.
     required: false
 
 runs:
