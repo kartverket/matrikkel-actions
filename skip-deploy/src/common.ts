@@ -1,5 +1,5 @@
 import {require, requireNotNullOrEmpty} from "../../utils/fn-utils.ts";
-import type {KubernetesAppIdentificator} from "../../utils/common-types.ts";
+import {ImageDescriptorSerde, type KubernetesAppIdentificator} from "../../utils/common-types.ts";
 import * as yaml from "yaml";
 import { getInput, getRequiredInput } from "../../utils/utils.ts";
 
@@ -57,7 +57,8 @@ export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator 
     const content = yaml.parse(yamlfile);
     const namespace = content.metadata.namespace;
     const appname = content.metadata.name;
-    const version = content.metadata.version;
+    const { version } = ImageDescriptorSerde.deserialize(content.spec.image);
+
 
     requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
     requireNotNullOrEmpty(appname, () => 'Could not find appname in yaml');

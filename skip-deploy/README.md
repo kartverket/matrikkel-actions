@@ -17,7 +17,7 @@ The rendered resource must contain:
 
 - `metadata.namespace`
 - `metadata.name`
-- `metadata.version`
+- `spec.image` (must include version)
 
 Those fields determine the apps-repo target path and the deployment that `wait` monitors.
 
@@ -129,7 +129,8 @@ kind: Application
 metadata:
   namespace: "{{ namespace }}"
   name: my-app
-  version: "{{ image }}"
+spec:
+  image: "ghcr.io/appnavn:<version>"
 ```
 
 The action writes:
