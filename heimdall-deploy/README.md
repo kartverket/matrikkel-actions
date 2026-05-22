@@ -46,7 +46,7 @@ Each rendered resource must include:
 
 - `metadata.namespace`
 - `metadata.name`
-- `metadata.version`
+- `spec.image` (must include version)
 
 The action writes the rendered resource to:
 
