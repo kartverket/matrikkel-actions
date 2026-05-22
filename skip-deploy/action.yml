@@ -87,14 +87,17 @@ runs:
         VAR: ${{ inputs.var }}
 
     - name: Setup Kubectl
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       uses: azure/setup-kubectl@v4
 
     - name: Setup Cloud SDK
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       uses: google-github-actions/setup-gcloud@v3
       with:
         install_components: gke-gcloud-auth-plugin
 
     - name: Authenticate to GCP
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       uses: google-github-actions/auth@v3
       with:
         project_id: ${{ inputs.kubernetes_project_id }}
@@ -102,11 +105,13 @@ runs:
         service_account: ${{ inputs.service_account }}
 
     - name: Authenticate to Kubernetes
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
       run: |
         gcloud container hub memberships get-credentials ${{ inputs.cluster }} --verbosity debug
 
     - name: Update versions
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
       run: |
         set -euo pipefail
