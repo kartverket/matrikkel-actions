@@ -1,17 +1,18 @@
 import {require, requireNotNullOrEmpty} from "../../utils/fn-utils.ts";
 import type {KubernetesAppIdentificator} from "../../utils/common-types.ts";
 import * as yaml from "yaml";
-import { getRequiredInput } from "../../utils/utils.ts";
-import {getInput} from "@actions/core";
+import { getInput, getRequiredInput } from "../../utils/utils.ts";
 
 export async function readAppInputs() {
     const cluster = getRequiredInput('cluster');
     const resource = getRequiredInput('resource');
     const varMatrixStr = getInput('var');
 
+    const workspace = process.env['GITHUB_WORKSPACE'];
     const resources = resource.split(',')
         .map(it => it.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(it => workspace ? `${workspace}/${it}` : it);
 
     require(resources.length > 0, () => `Must provide at least one resource file`)
     for (const resource of resources) {
@@ -20,16 +21,18 @@ export async function readAppInputs() {
         require(exists, () => `"${resource}" was not found`);
     }
 
-    const varMatrix: Array<Record<string, string>> = (varMatrixStr ?? '')
-        .split(/[\r\n,]+/)
-        .map(it => it.trim())
-        .filter(Boolean)
-        .map(line => {
-            const vars = line.split(',')
-                .map(it => it.trim())
-                .map(it => it.split('=').map(i => i.trim()))
-            return Object.fromEntries(vars)
-        });
+    const varMatrix: Array<Record<string, string>> = varMatrixStr
+        ? varMatrixStr
+            .split(/[\r\n]+/)
+            .map(it => it.trim())
+            .filter(Boolean)
+            .map(line => {
+                const vars = line.split(',')
+                    .map(it => it.trim())
+                    .map(it => it.split('=').map(i => i.trim()))
+                return Object.fromEntries(vars)
+            })
+        : [{}];
 
     return {
         cluster,

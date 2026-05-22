@@ -10,7 +10,7 @@ import {groupBy} from "../../utils/fn-utils.ts";
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
     // Ensure file operations target the checked-out repo
-    process.chdir(workspace);
+    process.chdir(`${workspace}/apps-repo`);
 }
 
 const timeout = getRequiredInput('timeout');
