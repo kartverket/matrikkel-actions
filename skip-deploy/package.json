@@ -2,5 +2,9 @@
   "name": "skip-deploy",
   "module": "index.ts",
   "type": "module",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build:update": "bun build src/update.ts --target bun --format esm --outfile dist/update.js",
+    "build:wait": "bun build src/wait.ts --target bun --format esm --outfile dist/wait.js"
+  }
 }

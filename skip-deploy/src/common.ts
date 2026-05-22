@@ -1,7 +1,8 @@
-import {getInput, getRequiredInput} from "./utils.ts";
 import {require, requireNotNullOrEmpty} from "../../utils/fn-utils.ts";
 import type {KubernetesAppIdentificator} from "../../utils/common-types.ts";
 import * as yaml from "yaml";
+import { getRequiredInput } from "../../utils/utils.ts";
+import {getInput} from "@actions/core";
 
 export async function readAppInputs() {
     const cluster = getRequiredInput('cluster');

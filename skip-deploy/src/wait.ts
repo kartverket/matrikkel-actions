@@ -1,10 +1,9 @@
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
-import {type DeploymentStatus, K8sChecker} from "../../k8s-deployment-feedback/src/k8sChecker.ts";
+import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
 import {Duration} from "../../utils/Duration.ts";
-import {fatal, getRequiredInput} from "./utils.ts";
-import {centerFactory} from "../../utils/utils.ts";
+import {centerFactory, fatal, getRequiredInput} from "../../utils/utils.ts";
 import * as core from "@actions/core";
 import {groupBy} from "../../utils/fn-utils.ts";
 

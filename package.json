@@ -5,6 +5,8 @@
   "scripts": {
     "prepare": "husky",
     "build:slack-approval-notifier": "cd slack-approval-notifier && bun run build",
+    "build:skip-deploy": "cd skip-deploy && run-p build:*",
+    "build:k8s-feedback": "cd k8s-deployment-feedback && bun run build",
     "build": "run-p build:*"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
-import {type DeploymentStatus, K8sChecker} from "./k8sChecker.ts";
+import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
 import {groupBy} from "../../utils/fn-utils.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
 import {centerFactory, fatal} from "../../utils/utils.ts";

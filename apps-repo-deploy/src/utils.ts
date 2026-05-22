@@ -1,11 +1,6 @@
-import * as core from "@actions/core";
 import {groupBy, unique} from "../../utils/fn-utils.ts";
 import type {AppDeployDescriptor} from "../../utils/common-types.ts";
 
-export function fatal(message: string): never {
-    core.error(message);
-    process.exit(1);
-}
 
 export type UpdateEntry = AppDeployDescriptor & { originalVersion: string };
 
@@ -19,7 +14,7 @@ export function createCommitMessage(entries: UpdateEntry[]): [string, string] {
     const apps = groupBy(entries, it => it.appname);
     for (const [app, appEntries] of Object.entries(apps)) {
         description.push(`Updated ${app}`)
-        for (const entry of appEntries) {
+        for (const entry of appEntries!) {
             description.push(`${entry.cluster}:${entry.namespace}: ${entry.originalVersion} -> ${entry.version}`)
         }
         description.push('')

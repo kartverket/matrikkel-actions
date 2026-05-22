@@ -1,7 +1,7 @@
 import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
-import {createCommitMessage, fatal, type UpdateEntry} from "./utils.ts";
+import {createCommitMessage, type UpdateEntry} from "./utils.ts";
 import {
     type AppDeployDescriptor,
     AppDeployDescriptorSerde,
@@ -9,7 +9,7 @@ import {
     ImageDescriptorSerde
 } from '../../utils/common-types.ts';
 import {require, requireNotNull} from "../../utils/fn-utils.ts";
-import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
+import {fatal, versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {

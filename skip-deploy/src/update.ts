@@ -1,8 +1,9 @@
 import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
-import {fatal, getInput} from "./utils.ts";
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
+import {getInput} from "@actions/core";
+import {fatal} from "../../utils/utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {

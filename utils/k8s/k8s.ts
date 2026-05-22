@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 import type {Shell} from "@nutgaard/bun-recording-shell";
-import {withRetry, withTimeout} from "../../utils/async-utils.ts";
+import {withRetry, withTimeout} from "../async-utils.ts";
 
 export type KList<TResource> = {
     kind: "List",
