@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
+import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../common-types.ts";
 import {
     type Deployment,
     type KList,
