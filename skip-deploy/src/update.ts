@@ -2,8 +2,9 @@ import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
-import {expandKubernetesManifests, redactSensitiveValues} from "./expansion.ts";
+import { expandKubernetesManifests } from "./expansions/expansion.ts";
 import {fatal, getInput} from "../../utils/utils.ts";
+import {createAppsRepoDatabaseMetadataResolver} from "./expansions/rules/databasesRule.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
@@ -14,20 +15,23 @@ if (workspace) {
 const isDryrun = getInput('dry_run') === 'true';
 const isPrintPayload = getInput('print_payload') === 'true';
 const { cluster, resources, varMatrix  } = await readAppInputs();
+const resolveDatabaseMetadata = createAppsRepoDatabaseMetadataResolver(cluster);
 
 for (const resource of resources) {
     const file = Bun.file(resource);
     const content = await file.text();
     for (const vars of varMatrix) {
         const output = interpolateResource({resource: content, vars});
-        const expandedManifests = await expandKubernetesManifests(output);
+        const expandedManifests = await expandKubernetesManifests(output, {
+            databases: resolveDatabaseMetadata
+        });
 
         for (const expandedManifest of expandedManifests) {
             const file = findFileFor(cluster, expandedManifest.manifest);
 
             if (isPrintPayload) {
                 core.info(`${file}:`);
-                core.info(redactSensitiveValues(expandedManifest.manifest, expandedManifest.sensitiveValues) + '\n\n');
+                core.info(expandedManifest.manifest + '\n\n');
             }
 
             if (!isDryrun) {

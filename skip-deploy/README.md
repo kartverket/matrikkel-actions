@@ -61,7 +61,7 @@ runs:
         wait: ${{ inputs.wait }}
 ```
 
-The repository using the wrapper still needs `id-token: write`, because OctoSTS and Google workload identity use GitHub OIDC.
+The repository using the wrapper still needs `id-token: write`, because OctoSTS uses GitHub OIDC. Google workload identity is only used when `wait` is `true`.
 
 ## Direct Usage
 
@@ -100,9 +100,9 @@ jobs:
 | `apps_repo` | yes | | Apps repo to update, for example `kartverket/heimdall-apps`. |
 | `apps_repo_default_branch` | no | `main` | Branch to update in the apps repo. |
 | `identity` | yes | | OctoSTS identity used to get a token for `apps_repo`. |
-| `kubernetes_project_id` | yes | | GCP project containing the Kubernetes fleet membership. |
-| `workload_identity_provider` | yes | | Google workload identity provider used for Kubernetes authentication. |
-| `service_account` | yes | | Service account used for Kubernetes authentication. |
+| `kubernetes_project_id` | only when `wait` is `true` | | GCP project containing the Kubernetes fleet membership. |
+| `workload_identity_provider` | only when `wait` is `true` | | Google workload identity provider used for Kubernetes authentication. |
+| `service_account` | only when `wait` is `true` | | Service account used for Kubernetes authentication. |
 | `cluster` | yes | | Kubernetes fleet membership/cluster name and apps-repo environment directory. |
 | `resource` | yes | | Comma-separated resource files. Paths are relative to the caller repository checkout. |
 | `var` | no | | Newline-separated variable rows. Each row is comma-separated `key=value` pairs. |
@@ -160,48 +160,41 @@ The expanded apps-repo file contains one generated `ExternalSecret` for the appl
 
 ### Database outbound policies
 
-Database host and IP must not be committed in application source repositories. Declare a non-sensitive GSM metadata secret instead:
+Database host, IP, and JDBC URL must not be committed in application source repositories. Declare the database by name and choose the environment variable that should receive the JDBC URL:
 
 ```yaml
 spec:
   databases:
     - name: primary
-      gsmMetadataSecret: prod-matrikkel-db-metadata
+      envName: DATABASE_URL
 ```
 
-`skip-deploy` reads that GSM secret from `kubernetes_project_id`. The secret payload must be JSON:
+`skip-deploy` resolves the database from the namespace-scoped apps-repo metadata file:
 
-```json
-{
-  "host": "database-host",
-  "ip": "10.0.0.12",
-  "ports": [
-    { "name": "sql", "port": 5432, "protocol": "TCP" }
-  ]
-}
+```text
+env/<cluster>/<namespace>/database-metadata.yaml
 ```
 
-The resolved values are merged into `spec.accessPolicy.outbound.external` in the apps repo output. Resolved host and IP values are registered as GitHub Actions secrets and redacted from `print_payload` logs.
-
-### Generic outbound policies
-
-Non-sensitive outbound rules can be written under `spec.outbound`:
+The file must use this format:
 
 ```yaml
-spec:
-  outbound:
-    - host: login.microsoftonline.com
-      ports:
-        - name: https
-          port: 443
-          protocol: HTTPS
+databases:
+  - name: primary
+    url: jdbc:postgresql://database-host:5432/database-name
+    host: database-host
+    ip: 10.0.0.12
+    ports:
+      - name: sql
+        port: 5432
+        protocol: TCP
 ```
 
-These entries are merged into `spec.accessPolicy.outbound.external`, and `spec.outbound` is removed from the final Application manifest.
+The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into `spec.accessPolicy.outbound.external` in the apps repo output. Resolved URL, host, and IP values are redacted from `print_payload` logs.
 
 ## Prerequisites
 
 - The caller workflow must grant `id-token: write`.
 - The caller repository must be allowed by the OctoSTS configuration for the selected `identity`.
 - The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update resource files inside those directories.
+- Applications that use `spec.databases` must have `env/<cluster>/<namespace>/database-metadata.yaml` in the apps repo.
 - For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments, replicasets, statefulsets, and pods in the rendered namespaces.
