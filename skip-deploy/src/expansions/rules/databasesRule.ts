@@ -36,7 +36,11 @@ export const databasesRule: ExpansionRule = {
             context.addSensitiveValue(metadata.url);
             context.addSensitiveValue(metadata.host);
             context.addSensitiveValue(metadata.ip);
-            context.addOutboundRule({
+
+            context.appDoc.spec.accessPolicy ??= {};
+            context.appDoc.spec.accessPolicy.outbound ??= {};
+            context.appDoc.spec.accessPolicy.outbound.external ??= [];
+            context.appDoc.spec.accessPolicy.outbound.external.push({
                 host: metadata.host,
                 ip: metadata.ip,
                 ports: metadata.ports,

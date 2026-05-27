@@ -1,6 +1,8 @@
 import * as core from "@actions/core";
 import {require} from "../../../utils/fn-utils.ts";
 import {isObject} from "../utils.ts";
+import * as yaml from "yaml";
+import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
 
 export type ExpansionRule = {
     readonly name: string;
@@ -39,7 +41,6 @@ export type ApplicationExpansionDependencies = {
 
 export class ApplicationExpansionContext {
     readonly generatedExternalSecretData: ExternalSecretData[] = [];
-    readonly generatedOutboundRules: ExternalRule[] = [];
 
     constructor(
         public readonly appDoc: any,
@@ -62,10 +63,6 @@ export class ApplicationExpansionContext {
         );
     }
 
-    addOutboundRule(rule: ExternalRule) {
-        this.generatedOutboundRules.push(rule);
-    }
-
     addSensitiveValue(value: string | undefined) {
         if (value != null && value.length > 0) {
             core.setSecret(value);
@@ -79,7 +76,23 @@ export class ApplicationExpansionContext {
         const existing = env.find((entry: any) => isObject(entry) && entry.name === name);
         require(existing == null, () => `Conflicting env var generated from database: ${name}`);
 
-        env.push({name, value});
+        env.push({ name, value });
         this.appDoc.spec.env = env;
     }
+
+    serialize(): string {
+        const output = [this.appDoc];
+
+        if (this.generatedExternalSecretData.length > 0) {
+            const { name, manifest } = createExternalSecretDoc(this.namespace, this.appname, this.generatedExternalSecretData);
+            output.push(manifest);
+            this.appDoc.spec.envFrom ??= [];
+            this.appDoc.spec.envFrom.push({ secret: name });
+        }
+        return stringifyDocs(output);
+    }
+}
+
+function stringifyDocs(docs: unknown[]): string {
+    return docs.map(doc => yaml.stringify(doc).trimEnd()).join('\n---\n') + '\n';
 }
