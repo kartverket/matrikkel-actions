@@ -21,7 +21,7 @@ inputs:
     description: "Eks: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com"
     required: false
   cluster:
-    description: Kubernetes cluster the deployments target
+    description: Kubernetes cluster the deployments target (atkv3-dev, atkv3-prod, etc)
     required: true
   dry_run:
     description: If true, run templating and validate input, but do not actually make any requests.
@@ -121,7 +121,7 @@ runs:
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
       run: |
-        gcloud container hub memberships get-credentials ${{ inputs.cluster }} --verbosity debug
+        gcloud container hub memberships get-credentials ${{ inputs.cluster }}-user-cluster --verbosity debug
 
     - name: Wait for deployment
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
