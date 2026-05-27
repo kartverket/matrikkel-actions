@@ -13,13 +13,13 @@ inputs:
     required: true
   kubernetes_project_id:
     description: "Project ID for kubernetes kjører. Eks: kubernetes-dev-94b9"
-    required: true
+    required: false
   workload_identity_provider:
     description: "Eks: projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider"
-    required: true
+    required: false
   service_account:
     description: "Eks: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com"
-    required: true
+    required: false
   cluster:
     description: Kubernetes cluster the deployments target
     required: true
@@ -86,9 +86,18 @@ runs:
         RESOURCE: ${{ inputs.resource }}
         VAR: ${{ inputs.var }}
 
-    - name: Setup Kubectl
+    - name: Validate Kubernetes wait inputs
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
-      uses: azure/setup-kubectl@v4
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -n "${KUBERNETES_PROJECT_ID}" || { echo "kubernetes_project_id is required when wait is true"; exit 1; }
+        test -n "${WORKLOAD_IDENTITY_PROVIDER}" || { echo "workload_identity_provider is required when wait is true"; exit 1; }
+        test -n "${SERVICE_ACCOUNT}" || { echo "service_account is required when wait is true"; exit 1; }
+      env:
+        KUBERNETES_PROJECT_ID: ${{ inputs.kubernetes_project_id }}
+        WORKLOAD_IDENTITY_PROVIDER: ${{ inputs.workload_identity_provider }}
+        SERVICE_ACCOUNT: ${{ inputs.service_account }}
 
     - name: Setup Cloud SDK
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
@@ -104,13 +113,17 @@ runs:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         service_account: ${{ inputs.service_account }}
 
+    - name: Setup Kubectl
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
+      uses: azure/setup-kubectl@v4
+
     - name: Authenticate to Kubernetes
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
       run: |
         gcloud container hub memberships get-credentials ${{ inputs.cluster }} --verbosity debug
 
-    - name: Update versions
+    - name: Wait for deployment
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
       run: |

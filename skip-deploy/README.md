@@ -61,7 +61,7 @@ runs:
         wait: ${{ inputs.wait }}
 ```
 
-The repository using the wrapper still needs `id-token: write`, because OctoSTS and Google workload identity use GitHub OIDC.
+The repository using the wrapper still needs `id-token: write`, because OctoSTS uses GitHub OIDC. Google workload identity is only used when `wait` is `true`.
 
 ## Direct Usage
 
@@ -100,9 +100,9 @@ jobs:
 | `apps_repo` | yes | | Apps repo to update, for example `kartverket/heimdall-apps`. |
 | `apps_repo_default_branch` | no | `main` | Branch to update in the apps repo. |
 | `identity` | yes | | OctoSTS identity used to get a token for `apps_repo`. |
-| `kubernetes_project_id` | yes | | GCP project containing the Kubernetes fleet membership. |
-| `workload_identity_provider` | yes | | Google workload identity provider used for Kubernetes authentication. |
-| `service_account` | yes | | Service account used for Kubernetes authentication. |
+| `kubernetes_project_id` | only when `wait` is `true` | | GCP project containing the Kubernetes fleet membership. |
+| `workload_identity_provider` | only when `wait` is `true` | | Google workload identity provider used for Kubernetes authentication. |
+| `service_account` | only when `wait` is `true` | | Service account used for Kubernetes authentication. |
 | `cluster` | yes | | Kubernetes fleet membership/cluster name and apps-repo environment directory. |
 | `resource` | yes | | Comma-separated resource files. Paths are relative to the caller repository checkout. |
 | `var` | no | | Newline-separated variable rows. Each row is comma-separated `key=value` pairs. |
@@ -141,9 +141,60 @@ env/<cluster>/<namespace>/my-app.yaml
 
 If `var` is omitted, each resource is processed once without interpolation variables. Any remaining `{{ ... }}` placeholder then fails the action.
 
+## Manifest Expansion
+
+After templating, `skip-deploy` expands a small set of convenience fields into regular Skiperator and Kubernetes resources before writing to the apps repo.
+
+### GSM environment secrets
+
+Use `gsmSecretName` on `spec.env` entries to fetch values from Google Secret Manager through External Secrets:
+
+```yaml
+spec:
+  env:
+    - name: DB_ADMIN_PASSWORD
+      gsmSecretName: prod-matrikkel-db-admin-password
+```
+
+The expanded apps-repo file contains one generated `ExternalSecret` for the application, named `<app>-externalsecrets`, targeting `<app>-secrets`. The application gets `envFrom: [{ secret: <app>-secrets }]`, and the shortcut `env` entry is removed from the final Application manifest.
+
+### Database outbound policies
+
+Database host, IP, and JDBC URL must not be committed in application source repositories. Declare the database by name and choose the environment variable that should receive the JDBC URL:
+
+```yaml
+spec:
+  databases:
+    - name: primary
+      envName: DATABASE_URL
+```
+
+`skip-deploy` resolves the database from the namespace-scoped apps-repo metadata file:
+
+```text
+env/<cluster>/<namespace>/database-metadata.yaml
+```
+
+The file must use this format:
+
+```yaml
+databases:
+  - name: primary
+    url: jdbc:postgresql://database-host:5432/database-name
+    host: database-host
+    ip: 10.0.0.12
+    ports:
+      - name: sql
+        port: 5432
+        protocol: TCP
+```
+
+The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into `spec.accessPolicy.outbound.external` in the apps repo output. Resolved URL, host, and IP values are redacted from `print_payload` logs.
+
 ## Prerequisites
 
 - The caller workflow must grant `id-token: write`.
 - The caller repository must be allowed by the OctoSTS configuration for the selected `identity`.
 - The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update resource files inside those directories.
+- Applications that use `spec.databases` must have `env/<cluster>/<namespace>/database-metadata.yaml` in the apps repo.
 - For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments, replicasets, statefulsets, and pods in the rendered namespaces.

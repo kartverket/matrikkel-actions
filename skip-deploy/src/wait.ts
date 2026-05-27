@@ -1,4 +1,5 @@
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
+import { expandKubernetesManifests} from "./expansions/expansion.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
 import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
@@ -6,6 +7,7 @@ import {Duration} from "../../utils/Duration.ts";
 import {centerFactory, fatal, getRequiredInput} from "../../utils/utils.ts";
 import * as core from "@actions/core";
 import {groupBy} from "../../utils/fn-utils.ts";
+import {createAppsRepoDatabaseMetadataResolver} from "./expansions/rules/databasesRule.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
@@ -15,6 +17,7 @@ if (workspace) {
 
 const timeout = getRequiredInput('timeout');
 const { cluster, resources, varMatrix  } = await readAppInputs();
+const resolveDatabaseMetadata = createAppsRepoDatabaseMetadataResolver(cluster);
 
 const descriptorsToWaitFor: KubernetesAppIdentificator[] = [];
 for (const resource of resources) {
@@ -22,7 +25,10 @@ for (const resource of resources) {
     const content = await file.text();
     for (const vars of varMatrix) {
         const output = interpolateResource({resource: content, vars});
-        descriptorsToWaitFor.push(findAppDescriptor(output));
+        const expandedManifests = await expandKubernetesManifests(output, {
+            databases: resolveDatabaseMetadata
+        });
+        descriptorsToWaitFor.push(...expandedManifests.map(it => findAppDescriptor(it.manifest)));
     }
 }
 
