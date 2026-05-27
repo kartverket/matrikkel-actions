@@ -215,12 +215,27 @@ async function fetchHeimdallAppsFile(
 
 export async function getCommitsBetweenVersions(
     octokit: InstanceType<typeof GitHub>,
-    base: string,
+    base: string | null,
     head: string
 ): Promise<ApprovalState['commits']> {
-    if (!base || !head || base === head) {
+    if (base == null) {
+        // return ALL commits...
+        const getCommits = await octokit.rest.repos.listCommits({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+        })
+        const commits = getCommits.data;
+        core.info(`Found ${commits.length} commits ${head}`);
+
+        return commits.map(commit => ({
+            gitsha: commit.sha.slice(0, 7),
+            message: (commit.commit?.message ?? '').split('\n')[0]!.trim(),
+        }));
+    }
+    if (base === head) {
         return [];
     }
+
 
     try {
         const compare = await octokit.rest.repos.compareCommitsWithBasehead({

@@ -40204,7 +40204,20 @@ async function fetchHeimdallAppsFile(octokit, path) {
   return response.data?.toString().trim();
 }
 async function getCommitsBetweenVersions(octokit, base, head) {
-  if (!base || !head || base === head) {
+  if (base == null) {
+    const getCommits = await octokit.rest.repos.listCommits({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo
+    });
+    const commits = getCommits.data;
+    core.info(`Found ${commits.length} commits ${head}`);
+    return commits.map((commit) => ({
+      gitsha: commit.sha.slice(0, 7),
+      message: (commit.commit?.message ?? "").split(`
+`)[0].trim()
+    }));
+  }
+  if (base === head) {
     return [];
   }
   try {
@@ -40255,8 +40268,7 @@ function readCommitsFromState() {
 async function resolveCommits(octokit, appsRepoOctokit, descriptor) {
   const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
   if (!previousVersion) {
-    core2.error("Could not find previous version in production");
-    process.exit(1);
+    core2.warning("Could not find previous version in production");
   }
   return getCommitsBetweenVersions(octokit, previousVersion, descriptor.version);
 }
@@ -40322,8 +40334,8 @@ async function run() {
       newMessageId = ts;
     }
     core2.setOutput("messageId", newMessageId);
-  } catch (error2) {
-    core2.setFailed(error2 instanceof Error ? error2.message : String(error2));
+  } catch (error) {
+    core2.setFailed(error instanceof Error ? error.message : String(error));
   }
 }
 await run();

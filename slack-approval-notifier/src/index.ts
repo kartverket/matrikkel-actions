@@ -42,8 +42,7 @@ async function resolveCommits(
 ): Promise<ApprovalState['commits']> {
     const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
     if (!previousVersion) {
-        core.error('Could not find previous version in production');
-        process.exit(1);
+        core.warning('Could not find previous version in production');
     }
 
     return getCommitsBetweenVersions(octokit, previousVersion, descriptor.version);
