@@ -22727,41 +22727,41 @@ var require_errors2 = __commonJS((exports) => {
     ErrorCode2["FileUploadInvalidArgumentsError"] = "slack_webapi_file_upload_invalid_args_error";
     ErrorCode2["FileUploadReadFileDataError"] = "slack_webapi_file_upload_read_file_data_error";
   })(ErrorCode || (exports.ErrorCode = ErrorCode = {}));
-  function errorWithCode(error, code) {
-    const codedError = error;
+  function errorWithCode(error2, code) {
+    const codedError = error2;
     codedError.code = code;
     return codedError;
   }
   function requestErrorWithOriginal(original, attachOriginal) {
-    const error = errorWithCode(new Error(`A request error occurred: ${original.message}`), ErrorCode.RequestError);
+    const error2 = errorWithCode(new Error(`A request error occurred: ${original.message}`), ErrorCode.RequestError);
     if (attachOriginal) {
-      error.original = original;
+      error2.original = original;
     }
-    return error;
+    return error2;
   }
   function httpErrorFromResponse(response) {
-    const error = errorWithCode(new Error(`An HTTP protocol error occurred: statusCode = ${response.status}`), ErrorCode.HTTPError);
-    error.statusCode = response.status;
-    error.statusMessage = response.statusText;
+    const error2 = errorWithCode(new Error(`An HTTP protocol error occurred: statusCode = ${response.status}`), ErrorCode.HTTPError);
+    error2.statusCode = response.status;
+    error2.statusMessage = response.statusText;
     const nonNullHeaders = {};
     for (const k of Object.keys(response.headers)) {
       if (k && response.headers[k]) {
         nonNullHeaders[k] = response.headers[k];
       }
     }
-    error.headers = nonNullHeaders;
-    error.body = response.data;
-    return error;
+    error2.headers = nonNullHeaders;
+    error2.body = response.data;
+    return error2;
   }
   function platformErrorFromResult(result) {
-    const error = errorWithCode(new Error(`An API error occurred: ${result.error}`), ErrorCode.PlatformError);
-    error.data = result;
-    return error;
+    const error2 = errorWithCode(new Error(`An API error occurred: ${result.error}`), ErrorCode.PlatformError);
+    error2.data = result;
+    return error2;
   }
   function rateLimitedErrorWithDelay(retrySec) {
-    const error = errorWithCode(new Error(`A rate-limit has been reached, you may retry this request in ${retrySec} seconds`), ErrorCode.RateLimitedError);
-    error.retryAfter = retrySec;
-    return error;
+    const error2 = errorWithCode(new Error(`A rate-limit has been reached, you may retry this request in ${retrySec} seconds`), ErrorCode.RateLimitedError);
+    error2.retryAfter = retrySec;
+    return error2;
   }
 });
 
@@ -31981,17 +31981,17 @@ var require_iterate = __commonJS((exports, module) => {
   module.exports = iterate;
   function iterate(list, iterator, state, callback) {
     var key = state["keyedList"] ? state["keyedList"][state.index] : state.index;
-    state.jobs[key] = runJob(iterator, key, list[key], function(error, output) {
+    state.jobs[key] = runJob(iterator, key, list[key], function(error2, output) {
       if (!(key in state.jobs)) {
         return;
       }
       delete state.jobs[key];
-      if (error) {
+      if (error2) {
         abort(state);
       } else {
         state.results[key] = output;
       }
-      callback(error, state.results);
+      callback(error2, state.results);
     });
   }
   function runJob(iterator, key, item, callback) {
@@ -32049,9 +32049,9 @@ var require_parallel = __commonJS((exports, module) => {
   function parallel(list, iterator, callback) {
     var state = initState(list);
     while (state.index < (state["keyedList"] || list).length) {
-      iterate(list, iterator, state, function(error, result) {
-        if (error) {
-          callback(error, result);
+      iterate(list, iterator, state, function(error2, result) {
+        if (error2) {
+          callback(error2, result);
           return;
         }
         if (Object.keys(state.jobs).length === 0) {
@@ -32075,9 +32075,9 @@ var require_serialOrdered = __commonJS((exports, module) => {
   module.exports.descending = descending;
   function serialOrdered(list, iterator, sortMethod, callback) {
     var state = initState(list, sortMethod);
-    iterate(list, iterator, state, function iteratorHandler(error, result) {
-      if (error) {
-        callback(error, result);
+    iterate(list, iterator, state, function iteratorHandler(error2, result) {
+      if (error2) {
+        callback(error2, result);
         return;
       }
       state.index++;
@@ -33132,10 +33132,10 @@ var require_form_data = __commonJS((exports, module) => {
       this.pipe(request);
       if (cb) {
         var onResponse;
-        var callback = function(error, responce) {
+        var callback = function(error2, responce) {
           request.removeListener("error", callback);
           request.removeListener("response", onResponse);
-          return cb.call(this, error, responce);
+          return cb.call(this, error2, responce);
         };
         onResponse = callback.bind(this, null);
         request.on("error", callback);
@@ -33232,7 +33232,7 @@ var require_debug = __commonJS((exports, module) => {
     if (!debug2) {
       try {
         debug2 = (()=>{throw new Error("Cannot require module "+"debug");})()("follow-redirects");
-      } catch (error) {}
+      } catch (error2) {}
       if (typeof debug2 !== "function") {
         debug2 = function() {};
       }
@@ -33261,8 +33261,8 @@ var require_follow_redirects = __commonJS((exports, module) => {
   var useNativeURL = false;
   try {
     assert(new URL2(""));
-  } catch (error) {
-    useNativeURL = error.code === "ERR_INVALID_URL";
+  } catch (error2) {
+    useNativeURL = error2.code === "ERR_INVALID_URL";
   }
   var preservedUrlFields = [
     "auth",
@@ -33319,9 +33319,9 @@ var require_follow_redirects = __commonJS((exports, module) => {
     this._currentRequest.abort();
     this.emit("abort");
   };
-  RedirectableRequest.prototype.destroy = function(error) {
-    destroyRequest(this._currentRequest, error);
-    destroy.call(this, error);
+  RedirectableRequest.prototype.destroy = function(error2) {
+    destroyRequest(this._currentRequest, error2);
+    destroy.call(this, error2);
     return this;
   };
   RedirectableRequest.prototype.write = function(data, encoding, callback) {
@@ -33484,10 +33484,10 @@ var require_follow_redirects = __commonJS((exports, module) => {
       var i = 0;
       var self2 = this;
       var buffers = this._requestBodyBuffers;
-      (function writeNext(error) {
+      (function writeNext(error2) {
         if (request === self2._currentRequest) {
-          if (error) {
-            self2.emit("error", error);
+          if (error2) {
+            self2.emit("error", error2);
           } else if (i < buffers.length) {
             var buffer = buffers[i++];
             if (!request.finished) {
@@ -33680,12 +33680,12 @@ var require_follow_redirects = __commonJS((exports, module) => {
     });
     return CustomError;
   }
-  function destroyRequest(request, error) {
+  function destroyRequest(request, error2) {
     for (var event of events) {
       request.removeListener(event, eventHandlers[event]);
     }
     request.on("error", noop);
-    request.destroy(error);
+    request.destroy(error2);
   }
   function isSubdomain(subdomain, domain) {
     assert(isString(subdomain) && isString(domain));
@@ -34176,20 +34176,20 @@ var require_axios = __commonJS((exports, module) => {
   });
   Object.defineProperties(AxiosError, descriptors);
   Object.defineProperty(prototype$1, "isAxiosError", { value: true });
-  AxiosError.from = (error, code, config, request, response, customProps) => {
+  AxiosError.from = (error2, code, config, request, response, customProps) => {
     const axiosError = Object.create(prototype$1);
-    utils$1.toFlatObject(error, axiosError, function filter(obj) {
+    utils$1.toFlatObject(error2, axiosError, function filter(obj) {
       return obj !== Error.prototype;
     }, (prop) => {
       return prop !== "isAxiosError";
     });
-    const msg = error && error.message ? error.message : "Error";
-    const errCode = code == null && error ? error.code : code;
+    const msg = error2 && error2.message ? error2.message : "Error";
+    const errCode = code == null && error2 ? error2.code : code;
     AxiosError.call(axiosError, msg, errCode, config, request, response);
-    if (error && axiosError.cause == null) {
-      Object.defineProperty(axiosError, "cause", { value: error, configurable: true });
+    if (error2 && axiosError.cause == null) {
+      Object.defineProperty(axiosError, "cause", { value: error2, configurable: true });
     }
-    axiosError.name = error && error.name || "Error";
+    axiosError.name = error2 && error2.name || "Error";
     customProps && Object.assign(axiosError, customProps);
     return axiosError;
   };
@@ -36750,15 +36750,15 @@ var require_axios = __commonJS((exports, module) => {
         const onRejected = requestInterceptorChain[i++];
         try {
           newConfig = onFulfilled(newConfig);
-        } catch (error) {
-          onRejected.call(this, error);
+        } catch (error2) {
+          onRejected.call(this, error2);
           break;
         }
       }
       try {
         promise = dispatchRequest.call(this, newConfig);
-      } catch (error) {
-        return Promise.reject(error);
+      } catch (error2) {
+        return Promise.reject(error2);
       }
       i = 0;
       len = responseInterceptorChain.length;
@@ -37241,8 +37241,8 @@ var require_p_timeout = __commonJS((exports, module) => {
       if (typeof fallback === "function") {
         try {
           resolve(fallback());
-        } catch (error) {
-          reject(error);
+        } catch (error2) {
+          reject(error2);
         }
         return;
       }
@@ -37466,8 +37466,8 @@ var require_dist2 = __commonJS((exports) => {
               return;
             });
             resolve(await operation);
-          } catch (error) {
-            reject(error);
+          } catch (error2) {
+            reject(error2);
           }
           this._next();
         };
@@ -37659,12 +37659,12 @@ var require_retry_operation = __commonJS((exports, module) => {
     var mainError = null;
     var mainErrorCount = 0;
     for (var i = 0;i < this._errors.length; i++) {
-      var error = this._errors[i];
-      var message = error.message;
+      var error2 = this._errors[i];
+      var message = error2.message;
       var count = (counts[message] || 0) + 1;
       counts[message] = count;
       if (count >= mainErrorCount) {
-        mainError = error;
+        mainError = error2;
         mainErrorCount = count;
       }
     }
@@ -37780,11 +37780,11 @@ var require_p_retry = __commonJS((exports, module) => {
       this.message = message;
     }
   }
-  var decorateErrorWithCounts = (error, attemptNumber, options) => {
+  var decorateErrorWithCounts = (error2, attemptNumber, options) => {
     const retriesLeft = options.retries - (attemptNumber - 1);
-    error.attemptNumber = attemptNumber;
-    error.retriesLeft = retriesLeft;
-    return error;
+    error2.attemptNumber = attemptNumber;
+    error2.retriesLeft = retriesLeft;
+    return error2;
   };
   var isNetworkError = (errorMessage) => networkErrorMsgs.includes(errorMessage);
   var pRetry = (input, options) => new Promise((resolve, reject) => {
@@ -37797,26 +37797,26 @@ var require_p_retry = __commonJS((exports, module) => {
     operation.attempt(async (attemptNumber) => {
       try {
         resolve(await input(attemptNumber));
-      } catch (error) {
-        if (!(error instanceof Error)) {
-          reject(new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`));
+      } catch (error2) {
+        if (!(error2 instanceof Error)) {
+          reject(new TypeError(`Non-error was thrown: "${error2}". You should only throw errors.`));
           return;
         }
-        if (error instanceof AbortError) {
+        if (error2 instanceof AbortError) {
           operation.stop();
-          reject(error.originalError);
-        } else if (error instanceof TypeError && !isNetworkError(error.message)) {
+          reject(error2.originalError);
+        } else if (error2 instanceof TypeError && !isNetworkError(error2.message)) {
           operation.stop();
-          reject(error);
+          reject(error2);
         } else {
-          decorateErrorWithCounts(error, attemptNumber, options);
+          decorateErrorWithCounts(error2, attemptNumber, options);
           try {
-            await options.onFailedAttempt(error);
-          } catch (error2) {
-            reject(error2);
+            await options.onFailedAttempt(error2);
+          } catch (error3) {
+            reject(error3);
             return;
           }
-          if (!operation.retry(error)) {
+          if (!operation.retry(error2)) {
             reject(operation.mainError());
           }
         }
@@ -39690,13 +39690,13 @@ var require_WebClient = __commonJS((exports) => {
               throw (0, errors_1.httpErrorFromResponse)(response);
             }
             return response;
-          } catch (error) {
-            const e = error;
+          } catch (error2) {
+            const e = error2;
             this.logger.warn("http request failed", e.message);
             if (e.request) {
               throw (0, errors_1.requestErrorWithOriginal)(e, this.attachOriginalToWebAPIRequestError);
             }
-            throw error;
+            throw error2;
           }
         }));
         return (0, p_retry_1.default)(task, this.retryConfig);
@@ -39964,10 +39964,10 @@ var require_dist4 = __commonJS((exports) => {
 });
 
 // src/index.ts
-var core2 = __toESM(require_core(), 1);
+var core3 = __toESM(require_core(), 1);
 
 // src/utils.ts
-var core = __toESM(require_core(), 1);
+var core2 = __toESM(require_core(), 1);
 var github = __toESM(require_github(), 1);
 
 // ../utils/fn-utils.ts
@@ -40002,6 +40002,7 @@ class Serde {
 }
 
 // ../utils/utils.ts
+var core = __toESM(require_core(), 1);
 function trimQuotes(value) {
   return value.replace(/^["']|["']$/g, "");
 }
@@ -40157,7 +40158,7 @@ async function getApprovers(octokit) {
       "X-GitHub-Api-Version": "2022-11-28"
     }
   });
-  core.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
+  core2.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
   return approverResponse.data;
 }
 async function getCurrentVersionFromAppsRepo(octokit, descriptor) {
@@ -40170,11 +40171,11 @@ async function getCurrentVersionFromVersionFile(octokit, descriptor) {
   try {
     const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor));
     const imageDescriptor = ImageDescriptorSerde.deserialize(content);
-    core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
+    core2.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
     return imageDescriptor.version;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    core.warning(`Could not read current version from apps repo: ${message}`);
+  } catch (error2) {
+    const message = error2 instanceof Error ? error2.message : String(error2);
+    core2.warning(`Could not read current version from apps repo: ${message}`);
     return null;
   }
 }
@@ -40182,11 +40183,11 @@ async function getCurrentVersionFromYamlFile(octokit, descriptor) {
   try {
     const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor));
     const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
-    core.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
+    core2.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
     return imageDescriptor.version;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    core.warning(`Could not read current version from apps repo (YAML): ${message}`);
+  } catch (error2) {
+    const message = error2 instanceof Error ? error2.message : String(error2);
+    core2.warning(`Could not read current version from apps repo (YAML): ${message}`);
     return null;
   }
 }
@@ -40210,7 +40211,7 @@ async function getCommitsBetweenVersions(octokit, base, head) {
       repo: github.context.repo.repo
     });
     const commits = getCommits.data;
-    core.info(`Found ${commits.length} commits ${head}`);
+    core2.info(`Found ${commits.length} commits ${head}`);
     return commits.map((commit) => ({
       gitsha: commit.sha.slice(0, 7),
       message: (commit.commit?.message ?? "").split(`
@@ -40230,15 +40231,15 @@ async function getCommitsBetweenVersions(octokit, base, head) {
       }
     });
     const commits = compare.data.commits;
-    core.info(`Found ${commits.length} commits between ${base} and ${head}`);
+    core2.info(`Found ${commits.length} commits between ${base} and ${head}`);
     return commits.map((commit) => ({
       gitsha: commit.sha.slice(0, 7),
       message: (commit.commit?.message ?? "").split(`
 `)[0].trim()
     }));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    core.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
+  } catch (error2) {
+    const message = error2 instanceof Error ? error2.message : String(error2);
+    core2.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
     return [];
   }
 }
@@ -40247,19 +40248,19 @@ async function getCommitsBetweenVersions(octokit, base, head) {
 var import_web_api = __toESM(require_dist4(), 1);
 var github2 = __toESM(require_github(), 1);
 function readStatus() {
-  const status = core2.getInput("status", { required: false }) || "AWAITING";
+  const status = core3.getInput("status", { required: false }) || "AWAITING";
   if (Object.keys(LaFLUT).includes(status)) {
     return status;
   }
   if (Object.keys(LaFLUT).includes(status.toUpperCase())) {
     return status.toUpperCase();
   }
-  core2.setFailed(`Invalid status: ${status}`);
+  core3.setFailed(`Invalid status: ${status}`);
   process.exit(1);
 }
 function readCommitsFromState() {
-  const commitsState = core2.getState("commits");
-  core2.debug(`commits: ${commitsState}`);
+  const commitsState = core3.getState("commits");
+  core3.debug(`commits: ${commitsState}`);
   if (!commitsState) {
     return;
   }
@@ -40268,60 +40269,60 @@ function readCommitsFromState() {
 async function resolveCommits(octokit, appsRepoOctokit, descriptor) {
   const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
   if (!previousVersion) {
-    core2.warning("Could not find previous version in production");
+    core3.warning("Could not find previous version in production");
   }
   return getCommitsBetweenVersions(octokit, previousVersion, descriptor.version);
 }
 async function run() {
   try {
-    const messageId = core2.getInput("messageId", { required: false });
+    const messageId = core3.getInput("messageId", { required: false });
     const isUpdateStep = messageId !== "";
-    const isPostStep = core2.getState("is_post") == "true";
-    const approvedAt = core2.getState("approvedAt");
-    core2.saveState("is_post", "true");
+    const isPostStep = core3.getState("is_post") == "true";
+    const approvedAt = core3.getState("approvedAt");
+    core3.saveState("is_post", "true");
     const token = process.env.SLACK_BOT_TOKEN;
     if (!token) {
-      core2.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
+      core3.setFailed("Slack token is required (env: SLACK_BOT_TOKEN).");
       return;
     }
     const client = new import_web_api.WebClient(token);
     const ghToken = process.env.GITHUB_TOKEN;
     if (!ghToken) {
-      core2.setFailed("Could not find github token environment variable (env: GITHUB_TOKEN).");
+      core3.setFailed("Could not find github token environment variable (env: GITHUB_TOKEN).");
       return;
     }
     const octokit = github2.getOctokit(ghToken);
-    const channel = core2.getInput("channel", { required: true });
-    const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core2.getInput("appDescriptor", { required: true }));
+    const channel = core3.getInput("channel", { required: true });
+    const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core3.getInput("appDescriptor", { required: true }));
     const state = {
-      environment: core2.getInput("environment", { required: true }),
+      environment: core3.getInput("environment", { required: true }),
       version: appsRepoDescriptor.version,
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       commits: readCommitsFromState() ?? []
     };
-    core2.info(`IsPostStep: ${isPostStep}`);
-    core2.info(`Commits: ${state.commits.length}`);
+    core3.info(`IsPostStep: ${isPostStep}`);
+    core3.info(`Commits: ${state.commits.length}`);
     if (!isPostStep && state.commits.length == 0) {
       const appsRepoToken = process.env.APPS_REPO_TOKEN;
       if (!appsRepoToken) {
-        core2.setFailed("Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).");
+        core3.setFailed("Could not find apps-repo token environment variable (env: APPS_REPO_TOKEN).");
         return;
       }
       const appsRepoOctokit = github2.getOctokit(appsRepoToken);
       state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepoDescriptor);
-      core2.saveState("commits", JSON.stringify(state.commits));
+      core3.saveState("commits", JSON.stringify(state.commits));
     }
     const approvers = await getApprovers(octokit);
     if (approvers.length > 0) {
       state.approver = approvers[0].user.login;
-      core2.info(`[DEBUG] post: ${isPostStep} approvedAt: ${approvedAt}`);
+      core3.info(`[DEBUG] post: ${isPostStep} approvedAt: ${approvedAt}`);
       if (approvedAt === "") {
         const now = new Date;
         state.approvedAt = now;
-        core2.saveState("approvedAt", now.toISOString());
-        core2.info(`[DEBUG] ApprovedAT sat to ${now.toISOString()}`);
+        core3.saveState("approvedAt", now.toISOString());
+        core3.info(`[DEBUG] ApprovedAT sat to ${now.toISOString()}`);
       } else {
-        core2.info(`[DEBUG] ApprovedAT restored from ${approvedAt}`);
+        core3.info(`[DEBUG] ApprovedAT restored from ${approvedAt}`);
         state.approvedAt = new Date(approvedAt);
       }
     }
@@ -40333,9 +40334,9 @@ async function run() {
       const { ts } = await postMessage(client, channel, state);
       newMessageId = ts;
     }
-    core2.setOutput("messageId", newMessageId);
-  } catch (error) {
-    core2.setFailed(error instanceof Error ? error.message : String(error));
+    core3.setOutput("messageId", newMessageId);
+  } catch (error2) {
+    core3.setFailed(error2 instanceof Error ? error2.message : String(error2));
   }
 }
 await run();

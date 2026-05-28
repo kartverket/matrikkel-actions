@@ -1,0 +1,64 @@
+name: Heimdall Deploy
+description: Deploy Skip resources through Heimdall's apps repo and Kubernetes identity
+inputs:
+  cluster:
+    description: Kubernetes cluster the deployments target (atkv3-dev, atkv3-prod, etc)
+    required: true
+  dry_run:
+    description: If true, run templating and validate input, but do not actually make any requests.
+    required: false
+    default: "false"
+  print_payload:
+    description: If true, print templated resources to standard output.
+    required: false
+    default: "false"
+  resource:
+    description: Comma-separated list of resource files from the caller repository. Must be JSON or YAML format.
+    required: true
+  timeout:
+    description: Time to wait for deployment completion, especially when using WAIT.
+    required: false
+    default: "10m"
+  wait:
+    description: Block until deployment has completed with either success, failure or error state.
+    required: false
+    default: "true"
+  var:
+    description: Newline-separated variable rows. Each row is comma-separated key=value pairs.
+    required: false
+  config:
+    description: Holds normal configuration for (should not be specified by users)
+    required: false
+    default: >-
+      {
+        "atkv3-dev": {
+          "kubernetes_project_id": "kubernetes-dev-94b9",
+          "workload_identity_provider": "projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider",
+          "service_account": "matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com"
+        },
+        "atkv3-prod": {
+          "kubernetes_project_id": "kubernetes-prod-e4a2",
+          "workload_identity_provider": "projects/367207507054/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider",
+          "service_account": "matrikkel-deploy@matrikkel-prod-91b2.iam.gserviceaccount.com"
+        }
+      }
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy
+      uses: kartverket/matrikkel-actions/skip-deploy@skip-deploy
+      with:
+        apps_repo: kartverket/heimdall-apps
+        apps_repo_default_branch: main
+        identity: ${{ github.event.repository.name }}
+        kubernetes_project_id: ${{ fromJSON(inputs.config)[inputs.cluster].kubernetes_project_id }}
+        workload_identity_provider: ${{ fromJSON(inputs.config)[inputs.cluster].workload_identity_provider }}
+        service_account: ${{ fromJSON(inputs.config)[inputs.cluster].service_account }}
+        cluster: ${{ inputs.cluster }}
+        dry_run: ${{ inputs.dry_run }}
+        print_payload: ${{ inputs.print_payload }}
+        resource: ${{ inputs.resource }}
+        timeout: ${{ inputs.timeout }}
+        wait: ${{ inputs.wait }}
+        var: ${{ inputs.var }}

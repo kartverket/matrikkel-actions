@@ -1,31 +1,45 @@
-import * as core from '@actions/core';
+import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
+import { expandKubernetesManifests} from "./expansions/expansion.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
-import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
-import {groupBy} from "../../utils/fn-utils.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
-import {centerFactory, fatal} from "../../utils/utils.ts";
+import {type DeploymentStatus, K8sChecker} from "../../utils/k8s/k8sChecker.ts";
+import {Duration} from "../../utils/Duration.ts";
+import {centerFactory, fatal, getRequiredInput} from "../../utils/utils.ts";
+import * as core from "@actions/core";
+import {groupBy} from "../../utils/fn-utils.ts";
+import {createAppsRepoDatabaseMetadataResolver} from "./expansions/rules/databasesRule.ts";
 
-const SECOND = 1000;
-const MINUTE = 60 * 1000;
-const TEN_MINUTES = 10 * MINUTE;
-const TEN_SECONDS = 10 * SECOND;
+const workspace = process.env['GITHUB_WORKSPACE'];
+if (workspace) {
+    // Ensure file operations target the checked-out repo
+    process.chdir(`${workspace}/apps-repo`);
+}
 
+const timeout = getRequiredInput('timeout');
+const { cluster, resources, varMatrix  } = await readAppInputs();
+const resolveDatabaseMetadata = createAppsRepoDatabaseMetadataResolver(cluster);
 
-const appsString = core.getMultilineInput('apps', { required: true, trimWhitespace: true })
-const apps: KubernetesAppIdentificator[] = appsString
-    .map(it => KubernetesAppIdentificatorSerde.deserialize(it));
+const descriptorsToWaitFor: KubernetesAppIdentificator[] = [];
+for (const resource of resources) {
+    const file = Bun.file(resource);
+    const content = await file.text();
+    for (const vars of varMatrix) {
+        const output = interpolateResource({resource: content, vars});
+        const expandedManifests = await expandKubernetesManifests(output, {
+            databases: resolveDatabaseMetadata
+        });
+        descriptorsToWaitFor.push(...expandedManifests.map(it => findAppDescriptor(it.manifest)));
+    }
+}
 
-const timeoutStr = core.getInput('timeoutMs', {required: false});
-const checkIntervalStr = core.getInput('intervalMs', {required: false});
-const timeoutMs = timeoutStr === '' ? TEN_MINUTES : Number(timeoutStr);
-const checkIntervalMs = checkIntervalStr === '' ? TEN_SECONDS : Number(checkIntervalStr);
-const includeStatefulsets = core.getBooleanInput('includeStatefulSets', { required: false });
 const shellRecordingPath = process.env.SHELL_RECORDING_PATH;
-
 const shell = createShell({ mode: 'record', recordingLogPath: shellRecordingPath });
+const timeoutMs = Duration.parse(timeout).toWholeMilliseconds();
+const checkIntervalMs = Duration.ofSeconds(10).toWholeMilliseconds();
+const k8sChecker = new K8sChecker(shell, checkIntervalMs, timeoutMs, true);
 
-const k8sChecker = new K8sChecker(shell, checkIntervalMs, timeoutMs, includeStatefulsets);
-k8sChecker.addApps(apps);
+k8sChecker.addApps(descriptorsToWaitFor);
+
 const errors = k8sChecker.validate()
 if (errors.length > 0) {
     fatal(errors.join('\n'));
@@ -35,6 +49,7 @@ const lineWidth = 40;
 const separator = '-'.repeat(lineWidth);
 const centerText = centerFactory(lineWidth);
 const start = Date.now();
+
 while (true) {
     const now = Date.now();
     if (now - start > timeoutMs) {
@@ -71,8 +86,8 @@ while (true) {
                 groupStatus('Feilede deployments', failed).join('\n')
             );
         }
-        if (ready.length !== apps.length) {
-            fatal(`Antall klare deployments matchers ikke forventet antall. Forventet ${apps.length}, men fant ${ready.length}`);
+        if (ready.length !== descriptorsToWaitFor.length) {
+            fatal(`Antall klare deployments matchers ikke forventet antall. Forventet ${descriptorsToWaitFor.length}, men fant ${ready.length}`);
         } else {
             core.info('Alle deployments er klare');
             process.exit(0);
