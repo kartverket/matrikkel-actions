@@ -47,7 +47,7 @@ runs:
   using: composite
   steps:
     - name: Deploy
-      uses: kartverket/matrikkel-actions/skip-deploy@skip-deploy
+      uses: kartverket/matrikkel-actions/skip-deploy@main
       with:
         apps_repo: kartverket/heimdall-apps
         apps_repo_default_branch: main
