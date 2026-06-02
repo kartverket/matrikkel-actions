@@ -19,7 +19,6 @@ jobs:
     - uses: kartverket/matrikkel-actions/apps-repo-deploy/action.yml@main
       with:
         apps: |
-          atkv3-dev:matrikkel-main:matrikkel-status:1.2.3
-          atkv3-prod:matrikkel-nd:matrikkel-status:4.2.3
+          atkv3-dev:matrikkel-main:matrikkel-innsyn:4.2.3
           atkv3-prod:matrikkel-nd:matrikkel-innsyn:4.2.3
 ```
