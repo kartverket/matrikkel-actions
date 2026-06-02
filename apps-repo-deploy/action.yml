@@ -11,8 +11,7 @@ inputs:
 
   identity:
     description: Identity to be used for fetching STS token
-    required: false
-    default: heimdall
+    required: true
   repository:
     description: Repository used as the STS token scope
     required: false
