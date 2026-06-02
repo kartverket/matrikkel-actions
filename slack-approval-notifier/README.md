@@ -3,7 +3,7 @@
 Action for å fyre av notifikasjoner til slack for godkjenning av prodsettinger.
 
 ## Før bruk
-1. Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard/heimdall.sts.yaml)
+1. Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard)
 2. Legge til `SLACK_BOT_TOKEN` som secret i repoet
 
 
@@ -29,6 +29,7 @@ jobs:
         id: slack_notify
         uses: kartverket/matrikkel-actions/slack-approval-notifier/setup-octo@main
         with:
+          identity: matrikkel
           channel: C01V1AXA1R1        # Slack channel ID
           environment: "produksjon"   # Miljø som man deployer til
           appDescriptor: atkv3-prod:matrikkel-main:matrikkel-appname:1.2.3
@@ -46,6 +47,7 @@ jobs:
       - name: "Slack Notify: Deployment to production (Update)"
         uses: kartverket/matrikkel-actions/slack-approval-notifier/update@main
         with:
+          identity: matrikkel
           channel: C01V1AXA1R1        # Slack channel ID
           environment: "produksjon"   # Miljø som man deployer til
           appDescriptor: atkv3-prod:matrikkel-main:matrikkel-appname:1.2.3
@@ -59,6 +61,7 @@ jobs:
       - name:  Deploy to production
         uses: kartverket/matrikkel-actions/apps-repo-deploy@main
         with:
+          identity: matrikkel
           apps: |
             atkv3-prod:matrikkel-main:matrikkel-appname:${{ needs.version.outputs.version }}
       
