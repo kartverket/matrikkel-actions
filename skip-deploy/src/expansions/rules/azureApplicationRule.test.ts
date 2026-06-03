@@ -13,6 +13,9 @@ describe('', () => {
           azure:
             application:
               enabled: true
+              claims:
+                groups:
+                  - id: efa96215-e137-4850-bc85-744a869f6ef5
         `);
 
         await azureApplicationRule.apply(ctx);

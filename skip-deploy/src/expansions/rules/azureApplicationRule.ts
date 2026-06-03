@@ -5,7 +5,16 @@ import z from 'zod';
 const Config = z.object({
     azure: z.strictObject({
         application: z.object({
-            enabled: z.boolean()
+            enabled: z.boolean(),
+            allowAllUsers: z.boolean().optional().default(false),
+            singlePageApplication: z.boolean().optional().default(false),
+            claims: z.object({
+                groups: z.array(
+                    z.object({
+                        id: z.string("spec.azure.application.claims.groups[].id is required")
+                    })
+                )
+            }).optional()
         })
     }).optional()
 });
@@ -30,7 +39,12 @@ export const azureApplicationRule: ExpansionRule = {
             host: 'login.microsoftonline.com'
         });
 
-        const { secretName, manifest } = createAzureAdApplication(context.namespace, context.appname);
+        const spec = {
+            allowAllUsers: config.azure.application.allowAllUsers,
+            singlePageApplication: config.azure.application.singlePageApplication,
+            claims: config.azure.application.claims,
+        }
+        const { secretName, manifest } = createAzureAdApplication(context.namespace, context.appname, spec);
         context.addManifest(manifest);
 
         context.appManifest.spec.env ??= [];
