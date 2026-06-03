@@ -18,6 +18,9 @@ databases:
 describe('databasesRule', () => {
    it('should validate database configuration', async () => {
        const ctx = testContext(`
+            metadata:
+              namespace: main
+              name: appname
             spec:
               databases:
                 - name: my-db
