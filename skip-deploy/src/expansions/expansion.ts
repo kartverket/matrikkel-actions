@@ -9,6 +9,7 @@ import {envGsmSecretRule} from "./rules/envGsmSecretRule.ts";
 import {isObject} from "../utils.ts";
 import {databasesRule} from "./rules/databasesRule.ts";
 import {azureApplicationRule} from "./rules/azureApplicationRule.ts";
+import {preauthorizeInboundRule} from "./rules/preauthorizeInboundRule.ts";
 
 export type ExpandedManifest = {
     readonly manifest: string;
@@ -17,7 +18,8 @@ export type ExpandedManifest = {
 const rules: ExpansionRule[] = [
     envGsmSecretRule,
     databasesRule,
-    azureApplicationRule
+    azureApplicationRule,
+    preauthorizeInboundRule
 ];
 
 export async function expandKubernetesManifests(
