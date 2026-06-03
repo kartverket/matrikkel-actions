@@ -1,8 +1,12 @@
 # Skip Deploy
 
-`skip-deploy` renders one or more Skip/Kubernetes resource files, writes the rendered resources to an ArgoCD apps repo, pushes the change, and optionally waits for Kubernetes to report the deployed version as ready.
+`skip-deploy` renders one or more Skip/Kubernetes resource files, writes the rendered resources to an ArgoCD apps repo,
+pushes the change, and optionally waits for Kubernetes to report the deployed version as ready.
 
-This is the low-level deploy action. The recommended setup is to create a team-specific wrapper action, similar to [`heimdall-deploy`](../heimdall-deploy), that supplies your apps repo, OctoSTS identity convention, GCP project, workload identity provider, and service account. Application repositories should normally call that wrapper instead of calling `skip-deploy` directly.
+This is the low-level deploy action. The recommended setup is to create a team-specific wrapper action, similar to [
+`heimdall-deploy`](../heimdall-deploy), that supplies your apps repo, OctoSTS identity convention, GCP project, workload
+identity provider, and service account. Application repositories should normally call that wrapper instead of calling
+`skip-deploy` directly.
 
 ## How It Works
 
@@ -23,7 +27,8 @@ Those fields determine the apps-repo target path and the deployment that `wait` 
 
 ## Recommended Wrapper
 
-Create a wrapper action in this repository or in your own actions repository. The wrapper should expose only the values application teams need to choose, and hard-code team-owned infrastructure settings.
+Create a wrapper action in this repository or in your own actions repository. The wrapper should expose only the values
+application teams need to choose, and hard-code team-owned infrastructure settings.
 
 ```yaml
 name: My Team Deploy
@@ -61,7 +66,8 @@ runs:
         wait: ${{ inputs.wait }}
 ```
 
-The repository using the wrapper still needs `id-token: write`, because OctoSTS uses GitHub OIDC. Google workload identity is only used when `wait` is `true`.
+The repository using the wrapper still needs `id-token: write`, because OctoSTS uses GitHub OIDC. Google workload
+identity is only used when `wait` is `true`.
 
 ## Direct Usage
 
@@ -95,21 +101,21 @@ jobs:
 
 ## Inputs
 
-| Input | Required | Default | Description |
-| --- | --- | --- | --- |
-| `apps_repo` | yes | | Apps repo to update, for example `kartverket/heimdall-apps`. |
-| `apps_repo_default_branch` | no | `main` | Branch to update in the apps repo. |
-| `identity` | yes | | OctoSTS identity used to get a token for `apps_repo`. |
-| `kubernetes_project_id` | only when `wait` is `true` | | GCP project containing the Kubernetes fleet membership. |
-| `workload_identity_provider` | only when `wait` is `true` | | Google workload identity provider used for Kubernetes authentication. |
-| `service_account` | only when `wait` is `true` | | Service account used for Kubernetes authentication. |
-| `cluster` | yes | | Kubernetes fleet membership/cluster name and apps-repo environment directory. |
-| `resource` | yes | | Comma-separated resource files. Paths are relative to the caller repository checkout. |
-| `var` | no | | Newline-separated variable rows. Each row is comma-separated `key=value` pairs. |
-| `dry_run` | no | `false` | Render and validate input without writing, committing, pushing, or waiting. |
-| `print_payload` | no | `false` | Print rendered resource files to the workflow log. |
-| `wait` | no | `true` | Wait until Kubernetes reports the rendered deployment versions ready or failed. |
-| `timeout` | no | `10m` | Wait timeout. Supported suffixes are `ms`, `s`, `m`, and `h`. |
+| Input                        | Required                   | Default | Description                                                                           |
+|------------------------------|----------------------------|---------|---------------------------------------------------------------------------------------|
+| `apps_repo`                  | yes                        |         | Apps repo to update, for example `kartverket/heimdall-apps`.                          |
+| `apps_repo_default_branch`   | no                         | `main`  | Branch to update in the apps repo.                                                    |
+| `identity`                   | yes                        |         | OctoSTS identity used to get a token for `apps_repo`.                                 |
+| `kubernetes_project_id`      | only when `wait` is `true` |         | GCP project containing the Kubernetes fleet membership.                               |
+| `workload_identity_provider` | only when `wait` is `true` |         | Google workload identity provider used for Kubernetes authentication.                 |
+| `service_account`            | only when `wait` is `true` |         | Service account used for Kubernetes authentication.                                   |
+| `cluster`                    | yes                        |         | Kubernetes fleet membership/cluster name and apps-repo environment directory.         |
+| `resource`                   | yes                        |         | Comma-separated resource files. Paths are relative to the caller repository checkout. |
+| `var`                        | no                         |         | Newline-separated variable rows. Each row is comma-separated `key=value` pairs.       |
+| `dry_run`                    | no                         | `false` | Render and validate input without writing, committing, pushing, or waiting.           |
+| `print_payload`              | no                         | `false` | Print rendered resource files to the workflow log.                                    |
+| `wait`                       | no                         | `true`  | Wait until Kubernetes reports the rendered deployment versions ready or failed.       |
+| `timeout`                    | no                         | `10m`   | Wait timeout. Supported suffixes are `ms`, `s`, `m`, and `h`.                         |
 
 ## Templating
 
@@ -139,11 +145,13 @@ The action writes:
 env/<cluster>/<namespace>/my-app.yaml
 ```
 
-If `var` is omitted, each resource is processed once without interpolation variables. Any remaining `{{ ... }}` placeholder then fails the action.
+If `var` is omitted, each resource is processed once without interpolation variables. Any remaining `{{ ... }}`
+placeholder then fails the action.
 
 ## Manifest Expansion
 
-After templating, `skip-deploy` expands a small set of convenience fields into regular Skiperator and Kubernetes resources before writing to the apps repo.
+After templating, `skip-deploy` expands a small set of convenience fields into regular Skiperator and Kubernetes
+resources before writing to the apps repo.
 
 ### GSM environment secrets
 
@@ -156,11 +164,40 @@ spec:
       gsmSecretName: prod-matrikkel-db-admin-password
 ```
 
-The expanded apps-repo file contains one generated `ExternalSecret` for the application, named `<app>-externalsecrets`, targeting `<app>-secrets`. The application gets `envFrom: [{ secret: <app>-secrets }]`, and the shortcut `env` entry is removed from the final Application manifest.
+The expanded apps-repo file contains one generated `ExternalSecret` for the application, named `<app>-externalsecrets`,
+targeting `<app>-secrets`. The application gets `envFrom: [{ secret: <app>-secrets }]`, and the shortcut `env` entry is
+removed from the final Application manifest.
+
+### AzureAd Application Registration
+
+Use `spec.azure` to automatically register and configure your application in Azure/EntraId.
+
+Ex.:
+```yaml
+spec:
+  azure:
+    application:
+      enabled: true
+```
+This uses the Azurerator CRD to create an app-registration. 
+For utilizing the appRegistration to either mint a token, or validate a token the following environment variables are injected into the application.
+
+| Name                               | Description                                             |
+|------------------------------------|---------------------------------------------------------|
+| AZURE_APP_CLIENT_ID                | Application (client) ID                                 |
+| AZURE_APP_CLIENT_SECRET            | Client secret (password credential)                     |
+| AZURE_APP_JWK                      | Private key (JWK) for client assertion                  |
+| AZURE_APP_JWKS                     | Private key set (JWKS) for client assertion             |
+| AZURE_APP_WELL_KNOWN_URL           | The well-known URL for the metadata discovery document. |
+| AZURE_OPENID_CONFIG_ISSUER         | `issuer` from the metadata discovery document.          |
+| AZURE_OPENID_CONFIG_JWKS_URI       | `jwks_uri` from the metadata discovery document.        |
+| AZURE_OPENID_CONFIG_TOKEN_ENDPOINT | `token_endpoint` from the metadata discovery document.  |
+| AZURE_APP_TENANT_ID                | The AzureAd tenant used                                 |
 
 ### Database outbound policies
 
-Database host, IP, and JDBC URL must not be committed in application source repositories. Declare the database by name and choose the environment variable that should receive the JDBC URL:
+Database host, IP, and JDBC URL must not be committed in application source repositories. Declare the database by name
+and choose the environment variable that should receive the JDBC URL:
 
 ```yaml
 spec:
@@ -189,12 +226,16 @@ databases:
         protocol: TCP
 ```
 
-The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into `spec.accessPolicy.outbound.external` in the apps repo output. Resolved URL, host, and IP values are redacted from `print_payload` logs.
+The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into
+`spec.accessPolicy.outbound.external` in the apps repo output. Resolved URL, host, and IP values are redacted from
+`print_payload` logs.
 
 ## Prerequisites
 
 - The caller workflow must grant `id-token: write`.
 - The caller repository must be allowed by the OctoSTS configuration for the selected `identity`.
-- The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update resource files inside those directories.
+- The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update
+  resource files inside those directories.
 - Applications that use `spec.databases` must have `env/<cluster>/<namespace>/database-metadata.yaml` in the apps repo.
-- For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments, replicasets, statefulsets, and pods in the rendered namespaces.
+- For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments,
+  replicasets, statefulsets, and pods in the rendered namespaces.

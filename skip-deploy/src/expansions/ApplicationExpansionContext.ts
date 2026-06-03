@@ -89,6 +89,10 @@ export class ApplicationExpansionContext {
         this.appDoc.spec.env = env;
     }
 
+    addDoc(doc: any) {
+        this.otherDocs.push(doc);
+    }
+
     serialize(): string {
         const output = [this.appDoc, ...this.otherDocs];
 
