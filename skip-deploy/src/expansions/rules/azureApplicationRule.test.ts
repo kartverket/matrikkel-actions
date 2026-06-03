@@ -8,6 +8,7 @@ describe('', () => {
         const ctx = testContext(`
         metadata:
           name: appname
+          namespace: main
         spec:
           azure:
             application:
@@ -19,6 +20,7 @@ describe('', () => {
         yamlMatch(ctx.serialize(), `
             metadata:
               name: appname
+              namespace: main
             spec:
               accessPolicy:
                 outbound:

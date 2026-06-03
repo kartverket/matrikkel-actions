@@ -6,8 +6,8 @@ describe('envGsmSecretRule', () => {
    it('should remove secret references from env and add them to external list', async () => {
        const ctx = testContext(`
             metadata:
-              namespace: main
               name: appname
+              namespace: main
             spec:
               env:
                 - name: USERNAME
@@ -20,8 +20,8 @@ describe('envGsmSecretRule', () => {
 
        yamlMatch(ctx.serialize(), `
             metadata:
-              namespace: main
               name: appname
+              namespace: main
             spec:
               envFrom: 
                 - secret: appname-secrets
@@ -55,8 +55,8 @@ describe('envGsmSecretRule', () => {
    it('should validate secret names are correct', () => {
        const ctx = testContext(`
             metadata:
-              namespace: main
               name: appname
+              namespace: main
             spec:
               env:
                 - name: ""
@@ -70,8 +70,8 @@ describe('envGsmSecretRule', () => {
     it('should validate secret refrences are correct', () => {
         const ctx = testContext(`
             metadata:
-              namespace: main
               name: appname
+              namespace: main
             spec:
               env:
                 - name: "name"
