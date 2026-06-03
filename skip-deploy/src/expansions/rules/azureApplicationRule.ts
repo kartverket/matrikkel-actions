@@ -1,13 +1,24 @@
 import {ApplicationExpansionContext, type ExpansionRule} from "../ApplicationExpansionContext.ts";
 import {createAzureAdApplication} from "../crd/AzureAdApplication.ts";
+import z from 'zod';
+
+const Config = z.object({
+    azure: z.strictObject({
+        application: z.object({
+            enabled: z.boolean()
+        })
+    }).optional()
+});
+type Config = z.infer<typeof Config>;
 
 export const azureApplicationRule: ExpansionRule = {
     name: 'azureApplication',
     async apply(context: ApplicationExpansionContext): Promise<void> {
-        const azureAdCtx = context.appDoc.spec.azure;
-        if (azureAdCtx == null) return;
+        const config: Config = z.parse(Config, context.appDoc.spec)
 
-        const isEnabled = azureAdCtx.application?.enabled === true
+        if (config.azure == null) return;
+
+        const isEnabled = config.azure.application.enabled
 
         if (!isEnabled) return;
 

@@ -1,37 +1,35 @@
 import * as yaml from "yaml";
+import z from 'zod';
 import {
     ApplicationExpansionContext,
-    type DatabaseMetadataResolver,
+    DatabaseMetadata,
+    type DatabaseMetadataResolver, DatabaseMetadataFile,
     type ExpansionRule,
-    type ExternalPort
 } from "../ApplicationExpansionContext.ts";
-import {require, requireNotNullOrEmpty} from "../../../../utils/fn-utils.ts";
-import {isObject} from "../../utils.ts";
+import {require} from "../../../../utils/fn-utils.ts";
 import {addEnvironmentVariable} from "../operations/addEnvironmentVariable.ts";
 import {addExternalOutboundAccessPolicy} from "../operations/addAccessPolicy.ts";
 
-export type DatabaseMetadata = {
-    readonly name: string;
-    readonly url: string;
-    readonly host: string;
-    readonly ip: string;
-    readonly ports: ExternalPort[];
-}
+const Config = z.object({
+    databases: z.array(
+        z.strictObject({
+            name: z.string("spec.databases[].name is required").min(1),
+            envName: z.string("spec.databases[].envName is required").min(1),
+        })
+    ).optional()
+});
+
+type Config = z.infer<typeof Config>;
 
 export const databasesRule: ExpansionRule = {
     name: 'databases',
     async apply(context: ApplicationExpansionContext): Promise<void> {
-        const databases = context.appDoc.spec?.databases;
-        if (databases == null) return;
+        const config: Config = z.parse(Config, context.appDoc.spec)
+        if (config.databases == null) return;
 
-        require(Array.isArray(databases), () => `spec.databases must be a list`);
+        const databases = config.databases;
 
         for (const database of databases) {
-            require(isObject(database), () => `spec.databases[] must be an object`);
-            requireNoDatabaseSourceFields(database);
-            requireNotNullOrEmpty(database.name, () => `spec.databases[].name is required`);
-            requireNotNullOrEmpty(database.envName, () => `spec.databases[].envName is required`);
-
             const metadata = await context.dependencies.databases(context.namespace, database.name);
             addEnvironmentVariable(context.appDoc, database.envName, metadata.url);
             context.addSensitiveValue(metadata.url);
@@ -77,40 +75,19 @@ async function loadNamespaceDatabaseMetadata(
     return metadata;
 }
 
-function requireNoDatabaseSourceFields(database: Record<string, unknown>) {
-    const forbiddenFields = ['gsmMetadataSecret', 'host', 'ip', 'ports', 'url'];
-    for (const field of forbiddenFields) {
-        require(database[field] == null, () => `spec.databases[] must not contain ${field}; use apps-repo database metadata`);
-    }
-}
-
 async function readNamespaceDatabaseMetadata(path: string): Promise<Map<string, DatabaseMetadata>> {
     const file = Bun.file(path);
     const exists = await file.exists();
     require(exists, () => `Database metadata file ${path} was not found`);
 
     const content = yaml.parse(await file.text());
-    require(isObject(content), () => `Database metadata file ${path} must contain a YAML object`);
-    require(Array.isArray(content.databases), () => `Database metadata file ${path} must contain databases list`);
+    const metadata = z.parse(DatabaseMetadataFile, content);
 
     const metadataByName = new Map<string, DatabaseMetadata>();
-    for (const metadata of content.databases) {
-        validateDatabaseMetadata(metadata, path);
-        require(!metadataByName.has(metadata.name), () => `Duplicate database metadata name "${metadata.name}" in ${path}`);
-        metadataByName.set(metadata.name, metadata);
+    for (const database of metadata.databases) {
+        require(!metadataByName.has(database.name), () => `Duplicate database metadata name "${database.name}" in ${path}`);
+        metadataByName.set(database.name, database);
     }
 
     return metadataByName;
-}
-
-function validateDatabaseMetadata(metadata: any, source: string): asserts metadata is DatabaseMetadata {
-    require(isObject(metadata), () => `Database metadata in ${source} must be an object`);
-    requireNotNullOrEmpty(metadata.name, () => `Database metadata in ${source} must contain name`);
-    requireNotNullOrEmpty(metadata.url, () => `Database metadata ${metadata.name} in ${source} must contain url`);
-    requireNotNullOrEmpty(metadata.host, () => `Database metadata ${metadata.name} in ${source} must contain host`);
-    requireNotNullOrEmpty(metadata.ip, () => `Database metadata ${metadata.name} in ${source} must contain ip`);
-    require(Array.isArray(metadata.ports) && metadata.ports.length > 0, () => `Database metadata ${metadata.name} in ${source} must contain non-empty ports`);
-    for (const port of metadata.ports) {
-        // validateExternalPort(port, `Database metadata ${metadata.name} in ${source} ports[]`);
-    }
 }

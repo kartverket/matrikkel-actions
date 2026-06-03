@@ -253,7 +253,7 @@ ${baseApplication}
       ports: []
       url: jdbc:postgresql://db-host:5432/sergreg
       gsmMetadataSecret: prod-matrikkel-db-metadata
-`, {databases: unexpectedDatabaseResolver})).rejects.toThrow('must not contain gsmMetadataSecret');
+`, {databases: unexpectedDatabaseResolver})).rejects.toThrow();
     });
 
     it('rejects database env without envName', async () => {

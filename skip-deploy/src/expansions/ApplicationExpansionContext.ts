@@ -1,24 +1,12 @@
 import * as core from "@actions/core";
 import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
-import {isObject} from "../utils.ts";
+import z from 'zod';
 import * as yaml from "yaml";
 import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
-import {addEnvironmentVariable} from "./operations/addEnvironmentVariable.ts";
 
 export type ExpansionRule = {
     readonly name: string;
     apply(context: ApplicationExpansionContext): Promise<void> | void;
-}
-export type ExternalPort = {
-    readonly name: string;
-    readonly port: number;
-    readonly protocol: string;
-}
-
-export type ExternalRule = {
-    readonly host: string;
-    readonly ip?: string;
-    readonly ports?: ExternalPort[];
 }
 
 export type ExternalSecretData = {
@@ -26,13 +14,25 @@ export type ExternalSecretData = {
     readonly remoteKey: string;
 }
 
-type DatabaseMetadata = {
-    readonly name: string;
-    readonly url: string;
-    readonly host: string;
-    readonly ip: string;
-    readonly ports: ExternalPort[];
-}
+export const DatabaseMetadata = z.object({
+    name: z.string(),
+    url: z.string(),
+    host: z.string(),
+    ip: z.string(),
+    ports: z.array(
+        z.object({
+            name: z.string(),
+            port: z.number(),
+            protocol: z.string(),
+        })
+    ),
+});
+export type DatabaseMetadata = z.infer<typeof DatabaseMetadata>;
+
+export const DatabaseMetadataFile = z.object({
+    databases: z.array(DatabaseMetadata)
+});
+export type DatabaseMetadataFile = z.infer<typeof DatabaseMetadataFile>;
 
 export type DatabaseMetadataResolver = (namespace: string, databaseName: string) => Promise<DatabaseMetadata>;
 
