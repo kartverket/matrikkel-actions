@@ -1,7 +1,6 @@
 import * as core from "@actions/core";
-import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
+import {requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
 import * as yaml from "yaml";
-import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
 import type {DatabaseRuleDependencies} from "./rules/databasesRule.ts";
 
 export type ExpansionRule = {
@@ -9,16 +8,10 @@ export type ExpansionRule = {
     apply(context: ApplicationExpansionContext): Promise<void> | void;
 }
 
-export type ExternalSecretData = {
-    readonly secretKey: string;
-    readonly remoteKey: string;
-}
-
 export type ApplicationExpansionDependencies = {}
     & DatabaseRuleDependencies;
 
 export class ApplicationExpansionContext {
-    readonly generatedExternalSecretData: ExternalSecretData[] = [];
     public readonly namespace: string;
     public readonly appname: string;
 
@@ -42,19 +35,6 @@ export class ApplicationExpansionContext {
         return this.otherDocs.find(it => it.kind === kind);
     }
 
-    addExternalSecretData(data: ExternalSecretData) {
-        const existing = this.generatedExternalSecretData.find(it => it.secretKey === data.secretKey);
-        if (existing == null) {
-            this.generatedExternalSecretData.push(data);
-            return;
-        }
-
-        require(
-            existing.remoteKey === data.remoteKey,
-            () => `Conflicting generated secret key: ${data.secretKey}`
-        );
-    }
-
     addSensitiveValue(value: string | undefined) {
         if (value != null && value.length > 0) {
             core.setSecret(value);
@@ -66,15 +46,7 @@ export class ApplicationExpansionContext {
     }
 
     serialize(): string {
-        const output = [this.appDoc, ...this.otherDocs];
-
-        if (this.generatedExternalSecretData.length > 0) {
-            const { name, manifest } = createExternalSecretDoc(this.namespace, this.appname, this.generatedExternalSecretData);
-            output.push(manifest);
-            this.appDoc.spec.envFrom ??= [];
-            this.appDoc.spec.envFrom.push({ secret: name });
-        }
-        return stringifyDocs(output);
+        return stringifyDocs([this.appDoc, ...this.otherDocs]);
     }
 }
 
