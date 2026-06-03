@@ -65,7 +65,7 @@ describe('expandKubernetesManifests', () => {
               - Ingress
         `);
 
-        const manifests: string[] = (await expandKubernetesManifests(manifest, {databases: unexpectedDatabaseResolver}))
+        const manifests: string[] = (await expandKubernetesManifests('dev', manifest, {databases: unexpectedDatabaseResolver}))
             .map(it => it.manifest);
 
         expect(manifests.some(it => it.includes('VirtualService'))).toBeTrue();
@@ -242,7 +242,7 @@ ${baseApplication}
     });
 
     it('rejects database metadata fields in source manifests', async () => {
-        await expect(expandKubernetesManifests(`
+        await expect(expandKubernetesManifests('dev', `
 ${baseApplication}
   databases:
     - name: primary
@@ -256,7 +256,7 @@ ${baseApplication}
     });
 
     it('rejects database env without envName', async () => {
-        await expect(expandKubernetesManifests(`
+        await expect(expandKubernetesManifests('dev',`
 ${baseApplication}
   databases:
     - name: primary
@@ -292,7 +292,7 @@ async function expand(
     manifest: string,
     resolver: DatabaseMetadataResolver = unexpectedDatabaseResolver,
 ) {
-    const [expanded] = await expandKubernetesManifests(manifest, {databases: resolver});
+    const [expanded] = await expandKubernetesManifests('dev', manifest, {databases: resolver});
     expect(expanded).toBeDefined();
     return expanded!;
 }

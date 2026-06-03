@@ -9,6 +9,7 @@ import type {DatabaseMetadata, DatabaseMetadataResolver} from "./databasesRule.t
 export function testContext(manifest: string, dbMetadata: string | null = null): ApplicationExpansionContext {
     const appManifest = yaml.parse(trimIndent(manifest));
     return new ApplicationExpansionContext(
+        'dev',
         appManifest,
         [],
         { databases: testDbResolver(dbMetadata) }

@@ -25,7 +25,7 @@ for (const resource of resources) {
     const content = await file.text();
     for (const vars of varMatrix) {
         const output = interpolateResource({resource: content, vars});
-        const expandedManifests = await expandKubernetesManifests(output, {
+        const expandedManifests = await expandKubernetesManifests(cluster, output, {
             databases: resolveDatabaseMetadata
         });
         descriptorsToWaitFor.push(...expandedManifests.map(it => findAppDescriptor(it.manifest)));
