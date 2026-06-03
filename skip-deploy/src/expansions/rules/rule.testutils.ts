@@ -1,7 +1,9 @@
 import { expect } from 'bun:test';
 import * as yaml from 'yaml';
-import {ApplicationExpansionContext, type DatabaseMetadataResolver} from "../ApplicationExpansionContext.ts";
-import type {DatabaseMetadata} from "./databasesRule.ts";
+import {
+    ApplicationExpansionContext,
+} from "../ApplicationExpansionContext.ts";
+import type {DatabaseMetadata, DatabaseMetadataResolver} from "./databasesRule.ts";
 
 
 export function testContext(doc: string, dbMetadata: string | null = null): ApplicationExpansionContext {

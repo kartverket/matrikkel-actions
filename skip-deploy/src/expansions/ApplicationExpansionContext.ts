@@ -1,24 +1,12 @@
 import * as core from "@actions/core";
 import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
-import {isObject} from "../utils.ts";
 import * as yaml from "yaml";
 import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
-import {addEnvironmentVariable} from "./operations/addEnvironmentVariable.ts";
+import type {DatabaseRuleDependencies} from "./rules/databasesRule.ts";
 
 export type ExpansionRule = {
     readonly name: string;
     apply(context: ApplicationExpansionContext): Promise<void> | void;
-}
-export type ExternalPort = {
-    readonly name: string;
-    readonly port: number;
-    readonly protocol: string;
-}
-
-export type ExternalRule = {
-    readonly host: string;
-    readonly ip?: string;
-    readonly ports?: ExternalPort[];
 }
 
 export type ExternalSecretData = {
@@ -26,19 +14,8 @@ export type ExternalSecretData = {
     readonly remoteKey: string;
 }
 
-type DatabaseMetadata = {
-    readonly name: string;
-    readonly url: string;
-    readonly host: string;
-    readonly ip: string;
-    readonly ports: ExternalPort[];
-}
-
-export type DatabaseMetadataResolver = (namespace: string, databaseName: string) => Promise<DatabaseMetadata>;
-
-export type ApplicationExpansionDependencies = {
-    databases: DatabaseMetadataResolver;
-}
+export type ApplicationExpansionDependencies = {}
+    & DatabaseRuleDependencies;
 
 export class ApplicationExpansionContext {
     readonly generatedExternalSecretData: ExternalSecretData[] = [];

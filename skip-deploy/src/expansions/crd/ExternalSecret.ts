@@ -2,7 +2,6 @@ type SecretRefs = {
     readonly secretKey: string;
     readonly remoteKey: string;
 };
-type ExternalSecretCRD = {};
 
 export function createExternalSecretDoc(namespace: string, appname: string, data: SecretRefs[]) {
     const name = `${appname}-secrets`;

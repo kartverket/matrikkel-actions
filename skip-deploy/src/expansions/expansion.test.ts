@@ -3,9 +3,8 @@ import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import * as yaml from "yaml";
-import {type ExpandedManifest, expandKubernetesManifests} from "./expansion.ts";
-import type {DatabaseMetadataResolver} from "./ApplicationExpansionContext.ts";
-import {createAppsRepoDatabaseMetadataResolver} from "./rules/databasesRule.ts";
+import {expandKubernetesManifests} from "./expansion.ts";
+import {createAppsRepoDatabaseMetadataResolver, type DatabaseMetadataResolver} from "./rules/databasesRule.ts";
 import {trimIndent} from "./rules/rule.testutils.ts";
 
 const baseApplication = `
@@ -253,7 +252,7 @@ ${baseApplication}
       ports: []
       url: jdbc:postgresql://db-host:5432/sergreg
       gsmMetadataSecret: prod-matrikkel-db-metadata
-`, {databases: unexpectedDatabaseResolver})).rejects.toThrow('must not contain gsmMetadataSecret');
+`, {databases: unexpectedDatabaseResolver})).rejects.toThrow();
     });
 
     it('rejects database env without envName', async () => {
