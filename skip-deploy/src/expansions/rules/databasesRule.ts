@@ -49,25 +49,25 @@ type Config = z.infer<typeof Config>;
 export const databasesRule: ExpansionRule = {
     name: 'databases',
     async apply(context: ApplicationExpansionContext): Promise<void> {
-        const config: Config = z.parse(Config, context.appDoc.spec)
+        const config: Config = z.parse(Config, context.appManifest.spec)
         if (config.databases == null) return;
 
         const databases = config.databases;
 
         for (const database of databases) {
             const metadata = await context.dependencies.databases(context.namespace, database.name);
-            addEnvironmentVariable(context.appDoc, database.envName, metadata.url);
+            addEnvironmentVariable(context.appManifest, database.envName, metadata.url);
             context.addSensitiveValue(metadata.url);
             context.addSensitiveValue(metadata.host);
             context.addSensitiveValue(metadata.ip);
 
-            addExternalOutboundAccessPolicy(context.appDoc, {
+            addExternalOutboundAccessPolicy(context.appManifest, {
                 host: metadata.host,
                 ip: metadata.ip,
                 ports: metadata.ports,
             });
         }
-        delete context.appDoc.spec?.databases;
+        delete context.appManifest.spec?.databases;
     }
 }
 

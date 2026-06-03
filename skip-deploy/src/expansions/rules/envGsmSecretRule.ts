@@ -1,6 +1,6 @@
 import type {ExpansionRule} from "../ApplicationExpansionContext.ts";
 import z from 'zod';
-import {createExternalSecretDoc} from "../crd/ExternalSecret.ts";
+import {createExternalSecretManifest} from "../crd/ExternalSecret.ts";
 import {addSecretRef} from "../operations/addSecretRef.ts";
 
 const EnvValue = z.object({
@@ -25,7 +25,7 @@ type Config = z.infer<typeof Config>;
 export const envGsmSecretRule: ExpansionRule = {
     name: 'env-gsm-secret',
     apply: (context) => {
-        const config: Config = z.parse(Config, context.appDoc.spec)
+        const config: Config = z.parse(Config, context.appManifest.spec)
         if (config.env == null) return;
 
         const remainingEnv: EnvValue[] = [];
@@ -39,25 +39,25 @@ export const envGsmSecretRule: ExpansionRule = {
         }
 
         if (remainingEnv.length > 0) {
-            context.appDoc.spec.env = remainingEnv;
+            context.appManifest.spec.env = remainingEnv;
         } else {
-            delete context.appDoc.spec.env;
+            delete context.appManifest.spec.env;
         }
 
         if (secretRefs.length > 0) {
-            const existingSecretManifest = context.findDocument('ExternalSecret');
+            const existingSecretManifest = context.findManifestOfKind('ExternalSecret');
             if (existingSecretManifest == null) {
-                const { name, manifest }  = createExternalSecretDoc(
+                const { name, manifest }  = createExternalSecretManifest(
                     context.namespace,
                     context.appname,
                     []
                 );
-                context.addDoc(manifest);
-                context.appDoc.spec.envFrom ??= [];
-                context.appDoc.spec.envFrom.push({ secret: name });
+                context.addManifest(manifest);
+                context.appManifest.spec.envFrom ??= [];
+                context.appManifest.spec.envFrom.push({ secret: name });
             }
 
-            const secretsManifest = context.findDocument('ExternalSecret');
+            const secretsManifest = context.findManifestOfKind('ExternalSecret');
             for (const { name, gsmSecretName } of secretRefs) {
                 addSecretRef(secretsManifest, name, gsmSecretName);
             }

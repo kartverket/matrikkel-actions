@@ -6,10 +6,10 @@ import {
 import type {DatabaseMetadata, DatabaseMetadataResolver} from "./databasesRule.ts";
 
 
-export function testContext(doc: string, dbMetadata: string | null = null): ApplicationExpansionContext {
-    const appDoc = yaml.parse(trimIndent(doc));
+export function testContext(manifest: string, dbMetadata: string | null = null): ApplicationExpansionContext {
+    const appManifest = yaml.parse(trimIndent(manifest));
     return new ApplicationExpansionContext(
-        appDoc,
+        appManifest,
         [],
         { databases: testDbResolver(dbMetadata) }
     );
@@ -25,9 +25,9 @@ export function testDbResolver(data: string | null): DatabaseMetadataResolver {
 
 export function yamlMatch(actual: string, expected: string) {
     expect(
-        yaml.parseAllDocuments(trimIndent(actual)).map(doc => doc.toJSON())
+        yaml.parseAllDocuments(trimIndent(actual)).map(it => it.toJSON())
     ).toMatchObject(
-        yaml.parseAllDocuments(trimIndent(expected)).map(doc => doc.toJSON())
+        yaml.parseAllDocuments(trimIndent(expected)).map(it => it.toJSON())
     );
 }
 

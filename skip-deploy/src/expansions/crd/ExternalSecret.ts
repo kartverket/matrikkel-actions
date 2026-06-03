@@ -5,7 +5,7 @@ type SecretRefs = {
     readonly remoteKey: string;
 };
 
-export function createExternalSecretDoc(namespace: string, appname: string, data: SecretRefs[]) {
+export function createExternalSecretManifest(namespace: string, appname: string, data: SecretRefs[]) {
     const name = `${appname}-secrets`;
     const manifest =  {
         apiVersion: 'external-secrets.io/v1',
