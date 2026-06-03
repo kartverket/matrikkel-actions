@@ -16,12 +16,12 @@ export class ApplicationExpansionContext {
     public readonly appname: string;
 
     constructor(
-        public readonly appDoc: any,
-        public readonly otherDocs: any[],
+        public readonly appManifest: any,
+        public readonly otherManifests: any[],
         public readonly dependencies: ApplicationExpansionDependencies,
     ) {
-        const namespace = appDoc.metadata?.namespace;
-        const appname = appDoc.metadata?.name;
+        const namespace = appManifest.metadata?.namespace;
+        const appname = appManifest.metadata?.name;
 
         requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
         requireNotNullOrEmpty(appname, () => 'Could not find appname in yaml');
@@ -30,9 +30,9 @@ export class ApplicationExpansionContext {
         this.appname = appname;
     }
 
-    findDocument(kind: string): any | undefined {
-        if (kind === 'Application') return this.appDoc;
-        return this.otherDocs.find(it => it.kind === kind);
+    findManifestOfKind(kind: string): any | undefined {
+        if (kind === 'Application') return this.appManifest;
+        return this.otherManifests.find(it => it.kind === kind);
     }
 
     addSensitiveValue(value: string | undefined) {
@@ -41,15 +41,14 @@ export class ApplicationExpansionContext {
         }
     }
 
-    addDoc(doc: any) {
-        this.otherDocs.push(doc);
+    addManifest(manifest: any) {
+        this.otherManifests.push(manifest);
     }
 
     serialize(): string {
-        return stringifyDocs([this.appDoc, ...this.otherDocs]);
+        return [this.appManifest, ...this.otherManifests]
+            .map(it => yaml.stringify(it).trimEnd())
+            .join('\n---\n') + '\n';
     }
 }
 
-function stringifyDocs(docs: unknown[]): string {
-    return docs.map(doc => yaml.stringify(doc).trimEnd()).join('\n---\n') + '\n';
-}

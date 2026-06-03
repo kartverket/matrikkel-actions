@@ -24,21 +24,19 @@ export async function expandKubernetesManifests(
     manifest: string,
     dependencies: ApplicationExpansionDependencies,
 ): Promise<ExpandedManifest[]> {
-    const docs = yaml.parseAllDocuments(manifest)
-        .map(doc => doc.toJSON())
+    const manifests = yaml.parseAllDocuments(manifest)
+        .map(it => it.toJSON())
         .filter(Boolean);
 
 
-    const applicationDocs = docs.filter(it => isObject(it) && it.kind === 'Application');
-    const restDocs = docs.filter(it => isObject(it) && it.kind !== 'Application');
+    const applicationManifests = manifests.filter(it => isObject(it) && it.kind === 'Application');
+    const restManifests = manifests.filter(it => isObject(it) && it.kind !== 'Application');
 
-    require(applicationDocs.length > 0, () => `Could not find Application manifest`);
+    require(applicationManifests.length > 0, () => `Could not find Application manifest`);
 
     const expanded: ExpandedManifest[] = [];
-    for (const app of applicationDocs) {
-        const appDoc = structuredClone(app);
-
-        const context = new ApplicationExpansionContext(appDoc, restDocs, dependencies);
+    for (const appManifest of applicationManifests) {
+        const context = new ApplicationExpansionContext(appManifest, restManifests, dependencies);
 
         for (const rule of rules) {
             await rule.apply(context);

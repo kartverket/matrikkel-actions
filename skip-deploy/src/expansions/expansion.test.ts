@@ -26,11 +26,11 @@ describe('expandKubernetesManifests', () => {
     it('keeps plain manifests semantically unchanged', async () => {
         const expanded = await expand(baseApplication);
 
-        const docs = parseDocs(expanded.manifest);
-        expect(docs).toHaveLength(1);
-        expect(docs[0].kind).toBe('Application');
-        expect(docs[0].spec.image).toBe('ghcr.io/kartverket/matrikkel-ekstern-data:1.2.3');
-        expect(docs[0].spec.envFrom).toBeUndefined();
+        const manifest = parseManifest(expanded.manifest);
+        expect(manifest).toHaveLength(1);
+        expect(manifest[0].kind).toBe('Application');
+        expect(manifest[0].spec.image).toBe('ghcr.io/kartverket/matrikkel-ekstern-data:1.2.3');
+        expect(manifest[0].spec.envFrom).toBeUndefined();
     });
 
     it('should keep extra resources', async () => {
@@ -82,7 +82,7 @@ ${baseApplication}
       value: normal
 `);
 
-        const [app, externalSecret] = parseDocs(expanded.manifest);
+        const [app, externalSecret] = parseManifest(expanded.manifest);
         expect(app.spec.env).toEqual([{name: 'NORMAL_ENV', value: 'normal'}]);
         expect(app.spec.envFrom).toEqual([{secret: 'matrikkel-ekstern-data-secrets'}]);
 
@@ -131,7 +131,7 @@ ${baseApplication}
       envName: DATABASE_URL
 `, databaseResolver);
 
-        const [app] = parseDocs(expanded.manifest);
+        const [app] = parseManifest(expanded.manifest);
         expect(app.spec.databases).toBeUndefined();
         expect(app.spec.env).toEqual([
             {name: 'DATABASE_URL', value: 'jdbc:postgresql://db-host:5432/sergreg'},
@@ -163,7 +163,7 @@ ${baseApplication}
     - name: primary
       envName: DATABASE_URL
 `, createAppsRepoDatabaseMetadataResolver('cluster1', root));
-            const [app] = parseDocs(expanded.manifest);
+            const [app] = parseManifest(expanded.manifest);
             expect(app.spec.env).toEqual([
                 {name: 'DATABASE_URL', value: 'jdbc:postgresql://kv-vm.statkart.no:5432/sergreg'},
             ]);
@@ -282,8 +282,10 @@ ${baseApplication}
     });
 });
 
-function parseDocs(manifest: string): any[] {
-    return yaml.parseAllDocuments(manifest).map(doc => doc.toJSON()).filter(Boolean);
+function parseManifest(manifest: string): any[] {
+    return yaml.parseAllDocuments(manifest)
+        .map(it => it.toJSON())
+        .filter(Boolean);
 }
 
 async function expand(

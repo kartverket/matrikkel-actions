@@ -53,8 +53,8 @@ export function interpolateResource(input: { resource: string, vars: Record<stri
     );
 }
 
-function isApplication(doc: any): boolean {
-    return isObject(doc) && doc.kind === 'Application';
+function isApplication(manifest: any): boolean {
+    return isObject(manifest) && manifest.kind === 'Application';
 }
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -63,7 +63,7 @@ function isObject(value: unknown): value is Record<string, any> {
 
 export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator {
     const content = yaml.parseAllDocuments(yamlfile)
-        .map(doc => doc.toJSON())
+        .map(it => it.toJSON())
         .find(isApplication);
     require(content != null, () => `Could not find Application manifest`);
     const namespace = content.metadata.namespace;
