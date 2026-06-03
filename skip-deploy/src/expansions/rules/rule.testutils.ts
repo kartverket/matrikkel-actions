@@ -5,7 +5,7 @@ import type {DatabaseMetadata} from "./databasesRule.ts";
 
 
 export function testContext(doc: string, dbMetadata: string | null = null): ApplicationExpansionContext {
-    const appDoc = yaml.parse(doc);
+    const appDoc = yaml.parse(trimIndent(doc));
     return new ApplicationExpansionContext(
         appDoc,
         [],

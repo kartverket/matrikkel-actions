@@ -7,6 +7,8 @@ import {
 } from "../ApplicationExpansionContext.ts";
 import {require, requireNotNullOrEmpty} from "../../../../utils/fn-utils.ts";
 import {isObject} from "../../utils.ts";
+import {addEnvironmentVariable} from "../operations/addEnvironmentVariable.ts";
+import {addExternalOutboundAccessPolicy} from "../operations/addAccessPolicy.ts";
 
 export type DatabaseMetadata = {
     readonly name: string;
@@ -30,17 +32,13 @@ export const databasesRule: ExpansionRule = {
             requireNotNullOrEmpty(database.name, () => `spec.databases[].name is required`);
             requireNotNullOrEmpty(database.envName, () => `spec.databases[].envName is required`);
 
-
             const metadata = await context.dependencies.databases(context.namespace, database.name);
-            context.addEnvValue(database.envName, metadata.url);
+            addEnvironmentVariable(context.appDoc, database.envName, metadata.url);
             context.addSensitiveValue(metadata.url);
             context.addSensitiveValue(metadata.host);
             context.addSensitiveValue(metadata.ip);
 
-            context.appDoc.spec.accessPolicy ??= {};
-            context.appDoc.spec.accessPolicy.outbound ??= {};
-            context.appDoc.spec.accessPolicy.outbound.external ??= [];
-            context.appDoc.spec.accessPolicy.outbound.external.push({
+            addExternalOutboundAccessPolicy(context.appDoc, {
                 host: metadata.host,
                 ip: metadata.ip,
                 ports: metadata.ports,

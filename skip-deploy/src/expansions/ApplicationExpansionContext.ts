@@ -3,6 +3,7 @@ import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
 import {isObject} from "../utils.ts";
 import * as yaml from "yaml";
 import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
+import {addEnvironmentVariable} from "./operations/addEnvironmentVariable.ts";
 
 export type ExpansionRule = {
     readonly name: string;
@@ -59,6 +60,11 @@ export class ApplicationExpansionContext {
         this.appname = appname;
     }
 
+    findDocument(kind: string): any | undefined {
+        if (kind === 'Application') return this.appDoc;
+        return this.otherDocs.find(it => it.kind === kind);
+    }
+
     addExternalSecretData(data: ExternalSecretData) {
         const existing = this.generatedExternalSecretData.find(it => it.secretKey === data.secretKey);
         if (existing == null) {
@@ -78,15 +84,8 @@ export class ApplicationExpansionContext {
         }
     }
 
-    addEnvValue(name: string, value: string) {
-        const env = this.appDoc.spec.env ?? [];
-        require(Array.isArray(env), () => `spec.env must be a list`);
-
-        const existing = env.find((entry: any) => isObject(entry) && entry.name === name);
-        require(existing == null, () => `Conflicting env var generated from database: ${name}`);
-
-        env.push({ name, value });
-        this.appDoc.spec.env = env;
+    addDoc(doc: any) {
+        this.otherDocs.push(doc);
     }
 
     serialize(): string {

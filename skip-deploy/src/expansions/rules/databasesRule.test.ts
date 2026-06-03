@@ -19,8 +19,8 @@ describe('databasesRule', () => {
    it('should validate database configuration', async () => {
        const ctx = testContext(`
             metadata:
-              namespace: main
               name: appname
+              namespace: main
             spec:
               databases:
                 - name: my-db
@@ -30,6 +30,9 @@ describe('databasesRule', () => {
        await databasesRule.apply(ctx);
 
        yamlMatch(ctx.serialize(), `
+            metadata:
+              name: appname
+              namespace: main
             spec:
               accessPolicy:
                 outbound:
