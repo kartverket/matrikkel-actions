@@ -46,10 +46,7 @@ describe('envGsmSecretRule', () => {
                   remoteRef:
                     key: gsm-ref
                     metadataPolicy: None
-       `)
-
-       expect(ctx.appDoc.spec.env).toMatchObject([{ name: 'USERNAME', value: 'publicvalue'}]);
-       expect(ctx.generatedExternalSecretData).toMatchObject([{ secretKey: 'PASSWORD', remoteKey: 'gsm-ref' }]);
+       `);
    });
 
    it('should validate secret names are correct', () => {

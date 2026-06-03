@@ -1,3 +1,5 @@
+import {addSecretRef} from "../operations/addSecretRef.ts";
+
 type SecretRefs = {
     readonly secretKey: string;
     readonly remoteKey: string;
@@ -21,14 +23,12 @@ export function createExternalSecretDoc(namespace: string, appname: string, data
             target: {
                 name
             },
-            data: data.map(entry => ({
-                secretKey: entry.secretKey,
-                remoteRef: {
-                    key: entry.remoteKey,
-                    metadataPolicy: 'None',
-                },
-            })),
+            data: [],
         },
     };
+
+    for (const { secretKey, remoteKey } of data) {
+        addSecretRef(manifest, secretKey, remoteKey)
+    }
     return { name, manifest };
 }
