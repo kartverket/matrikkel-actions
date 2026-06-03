@@ -1,8 +1,8 @@
 import * as core from "@actions/core";
 import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
-import z from 'zod';
 import * as yaml from "yaml";
 import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
+import type {DatabaseRuleDependencies} from "./rules/databasesRule.ts";
 
 export type ExpansionRule = {
     readonly name: string;
@@ -14,31 +14,8 @@ export type ExternalSecretData = {
     readonly remoteKey: string;
 }
 
-export const DatabaseMetadata = z.object({
-    name: z.string(),
-    url: z.string(),
-    host: z.string(),
-    ip: z.string(),
-    ports: z.array(
-        z.object({
-            name: z.string(),
-            port: z.number(),
-            protocol: z.string(),
-        })
-    ),
-});
-export type DatabaseMetadata = z.infer<typeof DatabaseMetadata>;
-
-export const DatabaseMetadataFile = z.object({
-    databases: z.array(DatabaseMetadata)
-});
-export type DatabaseMetadataFile = z.infer<typeof DatabaseMetadataFile>;
-
-export type DatabaseMetadataResolver = (namespace: string, databaseName: string) => Promise<DatabaseMetadata>;
-
-export type ApplicationExpansionDependencies = {
-    databases: DatabaseMetadataResolver;
-}
+export type ApplicationExpansionDependencies = {}
+    & DatabaseRuleDependencies;
 
 export class ApplicationExpansionContext {
     readonly generatedExternalSecretData: ExternalSecretData[] = [];

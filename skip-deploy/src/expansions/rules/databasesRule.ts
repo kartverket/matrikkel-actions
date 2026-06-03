@@ -2,13 +2,38 @@ import * as yaml from "yaml";
 import z from 'zod';
 import {
     ApplicationExpansionContext,
-    DatabaseMetadata,
-    type DatabaseMetadataResolver, DatabaseMetadataFile,
     type ExpansionRule,
 } from "../ApplicationExpansionContext.ts";
 import {require} from "../../../../utils/fn-utils.ts";
 import {addEnvironmentVariable} from "../operations/addEnvironmentVariable.ts";
 import {addExternalOutboundAccessPolicy} from "../operations/addAccessPolicy.ts";
+
+export const DatabaseMetadata = z.object({
+    name: z.string(),
+    url: z.string(),
+    host: z.string(),
+    ip: z.string(),
+    ports: z.array(
+        z.object({
+            name: z.string(),
+            port: z.number(),
+            protocol: z.string(),
+        })
+    ),
+});
+export type DatabaseMetadata = z.infer<typeof DatabaseMetadata>;
+
+export const DatabaseMetadataFile = z.object({
+    databases: z.array(DatabaseMetadata)
+});
+export type DatabaseMetadataFile = z.infer<typeof DatabaseMetadataFile>;
+
+export type DatabaseMetadataResolver = (namespace: string, databaseName: string) => Promise<DatabaseMetadata>;
+
+export type DatabaseRuleDependencies = {
+    databases: DatabaseMetadataResolver;
+}
+
 
 const Config = z.object({
     databases: z.array(
