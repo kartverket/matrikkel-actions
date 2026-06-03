@@ -16,6 +16,7 @@ export class ApplicationExpansionContext {
     public readonly appname: string;
 
     constructor(
+        public readonly cluster: string,
         public readonly appManifest: any,
         public readonly otherManifests: any[],
         public readonly dependencies: ApplicationExpansionDependencies,

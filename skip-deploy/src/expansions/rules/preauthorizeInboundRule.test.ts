@@ -1,11 +1,39 @@
-import {describe, it} from 'bun:test';
-import {testContext, yamlMatch} from "./rule.testutils.ts";
+import { describe, it } from 'bun:test';
+import {testContext, trimIndent, yamlMatch} from "./rule.testutils.ts";
+import {preauthorizeInboundRule} from "./preauthorizeInboundRule.ts";
 import {azureApplicationRule} from "./azureApplicationRule.ts";
 
+describe('preauthorizeInboundRule', () => {
+    it('should do nothing if azure is not enabled', async () => {
+        const manifest = trimIndent(`
+        metadata:
+          name: appname
+          namespace: main
+        spec:
+          azure:
+            application:
+              enabled: false
+              claims:
+                groups:
+                  - id: efa96215-e137-4850-bc85-744a869f6ef5
+          accessPolicy:
+            inbound:
+              rules:
+                - application: otherapp
+                - application: anotherapp
+                  namespace: othernamespace
+       `);
+        const ctx = testContext(manifest);
 
-describe('', () => {
-    it('should expand', async () => {
-        const ctx = testContext(`
+        // Needs to run before preauth-rule since it checks for this manifest
+        await azureApplicationRule.apply(ctx);
+        await preauthorizeInboundRule.apply(ctx);
+
+        yamlMatch(ctx.serialize(), manifest);
+    });
+
+    it('should add preauthorized apps if azure is enabled', async () => {
+        const manifest = trimIndent(`
         metadata:
           name: appname
           namespace: main
@@ -16,9 +44,18 @@ describe('', () => {
               claims:
                 groups:
                   - id: efa96215-e137-4850-bc85-744a869f6ef5
-        `);
+          accessPolicy:
+            inbound:
+              rules:
+                - application: otherapp
+                - application: anotherapp
+                  namespace: othernamespace
+       `);
+        const ctx = testContext(manifest);
 
+        // Needs to run before preauth-rule since it checks for this manifest
         await azureApplicationRule.apply(ctx);
+        await preauthorizeInboundRule.apply(ctx);
 
         yamlMatch(ctx.serialize(), `
             metadata:
@@ -88,6 +125,13 @@ describe('', () => {
               claims:
                 groups:
                   - id: efa96215-e137-4850-bc85-744a869f6ef5 # AAD - TF - Team Heimdall
+              preAuthorizedApplications:
+                - cluster: dev
+                  namespace: main
+                  application: otherapp
+                - cluster: dev
+                  namespace: othernamespace
+                  application: anotherapp
        `)
-    });
-});
+    })
+})

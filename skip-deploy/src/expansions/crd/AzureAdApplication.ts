@@ -1,6 +1,5 @@
-export function createAzureAdApplication(namespace: string, appname: string) {
+export function createAzureAdApplication(namespace: string, appname: string, spec: any) {
     const secretName = `azuread-${appname}`;
-
     const manifest =  {
         apiVersion: 'nais.io/v1',
         kind: 'AzureAdApplication',
@@ -10,15 +9,19 @@ export function createAzureAdApplication(namespace: string, appname: string) {
         },
         spec: {
             secretName: secretName,
-            allowAllUsers: false,
-            singlePageApplication: false,
-            claims: {
-                groups: [
-                    // AAD - TF - TEAM - Heimdall
-                    { id: 'efa96215-e137-4850-bc85-744a869f6ef5' }
-                ]
-            },
+            ...spec,
         },
     };
     return { secretName, manifest };
+}
+
+export type AppReference = {
+    cluster: string;
+    namespace: string;
+    application: string;
+}
+export function addPreauthorizedApp(manifest: any, app: AppReference) {
+    manifest.spec ??= {};
+    manifest.spec.preAuthorizedApplications ??= [];
+    manifest.spec.preAuthorizedApplications.push(app);
 }
