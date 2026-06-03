@@ -26,21 +26,17 @@ export async function expandKubernetesManifests(
         .map(doc => doc.toJSON())
         .filter(Boolean);
 
-    const applicationDocs = docs.filter(function (doc: any): boolean {
-        return isObject(doc) && doc.kind === 'Application';
-    });
+
+    const applicationDocs = docs.filter(it => isObject(it) && it.kind === 'Application');
+    const restDocs = docs.filter(it => isObject(it) && it.kind !== 'Application');
+
     require(applicationDocs.length > 0, () => `Could not find Application manifest`);
 
     const expanded: ExpandedManifest[] = [];
     for (const app of applicationDocs) {
         const appDoc = structuredClone(app);
-        const namespace = appDoc.metadata?.namespace;
-        const appname = appDoc.metadata?.name;
 
-        requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
-        requireNotNullOrEmpty(appname, () => 'Could not find appname in yaml');
-
-        const context = new ApplicationExpansionContext(appDoc, namespace, appname, dependencies);
+        const context = new ApplicationExpansionContext(appDoc, restDocs, dependencies);
 
         for (const rule of rules) {
             await rule.apply(context);
@@ -48,6 +44,5 @@ export async function expandKubernetesManifests(
 
         expanded.push({ manifest: context.serialize() });
     }
-
     return expanded;
 }

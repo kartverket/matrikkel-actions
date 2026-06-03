@@ -5,6 +5,9 @@ import {envGsmSecretRule} from "./envGsmSecretRule.ts";
 describe('envGsmSecretRule', () => {
    it('should remove secret references from env and add them to external list', async () => {
        const ctx = testContext(`
+            metadata:
+              namespace: main
+              name: appname
             spec:
               env:
                 - name: USERNAME
@@ -16,6 +19,9 @@ describe('envGsmSecretRule', () => {
        await envGsmSecretRule.apply(ctx);
 
        yamlMatch(ctx.serialize(), `
+            metadata:
+              namespace: main
+              name: appname
             spec:
               envFrom: 
                 - secret: appname-secrets
@@ -48,6 +54,9 @@ describe('envGsmSecretRule', () => {
 
    it('should validate secret names are correct', () => {
        const ctx = testContext(`
+            metadata:
+              namespace: main
+              name: appname
             spec:
               env:
                 - name: ""
@@ -60,6 +69,9 @@ describe('envGsmSecretRule', () => {
 
     it('should validate secret refrences are correct', () => {
         const ctx = testContext(`
+            metadata:
+              namespace: main
+              name: appname
             spec:
               env:
                 - name: "name"

@@ -3,9 +3,10 @@ import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import * as yaml from "yaml";
-import {expandKubernetesManifests} from "./expansion.ts";
+import {type ExpandedManifest, expandKubernetesManifests} from "./expansion.ts";
 import type {DatabaseMetadataResolver} from "./ApplicationExpansionContext.ts";
 import {createAppsRepoDatabaseMetadataResolver} from "./rules/databasesRule.ts";
+import {trimIndent} from "./rules/rule.testutils.ts";
 
 const baseApplication = `
 apiVersion: skiperator.kartverket.no/v1alpha1
@@ -31,6 +32,45 @@ describe('expandKubernetesManifests', () => {
         expect(docs[0].kind).toBe('Application');
         expect(docs[0].spec.image).toBe('ghcr.io/kartverket/matrikkel-ekstern-data:1.2.3');
         expect(docs[0].spec.envFrom).toBeUndefined();
+    });
+
+    it('should keep extra resources', async () => {
+        const manifest = trimIndent(`
+          apiVersion: skiperator.kartverket.no/v1alpha1
+          kind: Application
+          metadata:
+            namespace: main
+            name: matrikkel-ekstern-data
+          spec:
+            image: ghcr.io/kartverket/matrikkel-ekstern-data:1.2.3
+            port: 8080
+          ---
+          # Just comment
+          apiVersion: networking.istio.io/v1
+          kind: VirtualService
+          metadata:
+            name: api-ingresses
+          spec:
+            gateways:
+              - istoio-gateways/test-gateway
+          ---
+          apiVersion: networking.k8s.io/v1
+          kind:NetworkPolicy
+          metadata:
+            name: appname-allow-tcp
+          spec:
+            podSelector:
+              matchLabels:
+                app: appname
+            policyTypes:
+              - Ingress
+        `);
+
+        const manifests: string[] = (await expandKubernetesManifests(manifest, {databases: unexpectedDatabaseResolver}))
+            .map(it => it.manifest);
+
+        expect(manifests.some(it => it.includes('VirtualService'))).toBeTrue();
+        expect(manifests.some(it => it.includes('NetworkPolicy'))).toBeTrue();
     });
 
     it('collects inline GSM env shortcuts into one ExternalSecret', async () => {

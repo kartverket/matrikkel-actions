@@ -8,8 +8,7 @@ export function testContext(doc: string, dbMetadata: string | null = null): Appl
     const appDoc = yaml.parse(doc);
     return new ApplicationExpansionContext(
         appDoc,
-        'main',
-        'appname',
+        [],
         { databases: testDbResolver(dbMetadata) }
     );
 }

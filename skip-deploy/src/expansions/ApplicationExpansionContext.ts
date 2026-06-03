@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import {require} from "../../../utils/fn-utils.ts";
+import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
 import {isObject} from "../utils.ts";
 import * as yaml from "yaml";
 import {createExternalSecretDoc} from "./crd/ExternalSecret.ts";
@@ -41,13 +41,22 @@ export type ApplicationExpansionDependencies = {
 
 export class ApplicationExpansionContext {
     readonly generatedExternalSecretData: ExternalSecretData[] = [];
+    public readonly namespace: string;
+    public readonly appname: string;
 
     constructor(
         public readonly appDoc: any,
-        public readonly namespace: string,
-        public readonly appname: string,
+        public readonly otherDocs: any[],
         public readonly dependencies: ApplicationExpansionDependencies,
     ) {
+        const namespace = appDoc.metadata?.namespace;
+        const appname = appDoc.metadata?.name;
+
+        requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
+        requireNotNullOrEmpty(appname, () => 'Could not find appname in yaml');
+
+        this.namespace = namespace;
+        this.appname = appname;
     }
 
     addExternalSecretData(data: ExternalSecretData) {
@@ -81,7 +90,7 @@ export class ApplicationExpansionContext {
     }
 
     serialize(): string {
-        const output = [this.appDoc];
+        const output = [this.appDoc, ...this.otherDocs];
 
         if (this.generatedExternalSecretData.length > 0) {
             const { name, manifest } = createExternalSecretDoc(this.namespace, this.appname, this.generatedExternalSecretData);
