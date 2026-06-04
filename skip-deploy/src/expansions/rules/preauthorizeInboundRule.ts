@@ -10,8 +10,8 @@ const Config = z.object({
                     application: z.string("spec.accessPolicy.inbound.rules[].application is required"),
                     namespace: z.string("spec.accessPolicy.inbound.rules[].namespace must not be blank").min(1).optional(),
                 })
-            )
-        })
+            ).optional()
+        }).optional()
     }).optional()
 });
 type Config = z.infer<typeof Config>;
@@ -21,8 +21,6 @@ export const preauthorizeInboundRule: ExpansionRule = {
     async apply(context: ApplicationExpansionContext): Promise<void> {
         const azureAdAppRegistration = context.findManifestOfKind('AzureAdApplication');
         if (!azureAdAppRegistration) return;
-
-        console.log('GOT AZURE REG')
 
         const config: Config = z.parse(Config, context.appManifest.spec)
 
