@@ -86,7 +86,7 @@ jobs:
         with:
           apps_repo: kartverket/heimdall-apps
           apps_repo_default_branch: main
-          identity: matrikkel-status
+          identity: matrikkel
           kubernetes_project_id: kubernetes-dev-94b9
           workload_identity_provider: projects/422604778482/locations/global/workloadIdentityPools/matrikkel-deploy-pool/providers/github-provider
           service_account: matrikkel-deploy@matrikkel-dev-fd36.iam.gserviceaccount.com
