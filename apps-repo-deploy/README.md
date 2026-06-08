@@ -3,7 +3,7 @@
 Custom github action to update application versions in [Heimdalls Apps Repo](https://github.com/kartverket/heimdall-apps).
 
 ## Før bruk
-Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard/heimdall.sts.yaml)
+Repoet som tar ibruk denne må være lagt til [heimdall-apps som OctoSTS konfigurasjon.](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard)
 
 ## Bruk
 
@@ -18,6 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: kartverket/matrikkel-actions/apps-repo-deploy/action.yml@main
       with:
+        identity: matrikkel
         apps: |
           atkv3-dev:matrikkel-main:matrikkel-innsyn:4.2.3
           atkv3-prod:matrikkel-nd:matrikkel-innsyn:4.2.3
