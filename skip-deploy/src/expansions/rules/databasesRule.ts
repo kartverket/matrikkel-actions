@@ -1,5 +1,6 @@
 import * as yaml from "yaml";
 import z from 'zod';
+import { JSONPath } from 'jsonpath-plus';
 import {
     ApplicationExpansionContext,
     type ExpansionRule,
@@ -37,10 +38,21 @@ export type DatabaseRuleDependencies = {
 
 const Config = z.object({
     databases: z.array(
-        z.strictObject({
-            name: z.string("spec.databases[].name is required").min(1),
-            envName: z.string("spec.databases[].envName is required").min(1),
-        })
+        z.xor([
+            z.strictObject({
+                name: z.string("spec.databases[].name is required").min(1),
+                envName: z.string("spec.databases[].envName is required").min(1),
+            }),
+            z.strictObject({
+                name: z.string("spec.databases[].name is required").min(1),
+                fields: z.array(
+                    z.strictObject({
+                        path: z.string('spec.databases[].fields[].path').min(1),
+                        envName: z.string("spec.databases[].fields[].envName is required").min(1),
+                    })
+                ),
+            })
+        ])
     ).optional()
 });
 
@@ -56,8 +68,12 @@ export const databasesRule: ExpansionRule = {
 
         for (const database of databases) {
             const metadata = await context.dependencies.databases(context.namespace, database.name);
-            addEnvironmentVariable(context.appManifest, database.envName, metadata.url);
-            context.addSensitiveValue(metadata.url);
+            const fields = ('fields' in database) ? database.fields : [{ path: '$.url', envName: database.envName }];
+            for (const field of fields) {
+                const fieldValue = JSONPath({ path: field.path, json: metadata, wrap: false  })
+                addEnvironmentVariable(context.appManifest, field.envName, fieldValue);
+                context.addSensitiveValue(fieldValue);
+            }
             context.addSensitiveValue(metadata.host);
             context.addSensitiveValue(metadata.ip);
 

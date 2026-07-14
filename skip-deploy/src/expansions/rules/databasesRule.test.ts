@@ -48,4 +48,43 @@ describe('databasesRule', () => {
                   value: jdbc:postgresql://database-host:5432/database-name
        `)
    });
+
+    it('should use the specified config-field', async () => {
+        const ctx = testContext(`
+            metadata:
+              name: appname
+              namespace: main
+            spec:
+              databases:
+                - name: my-db
+                  fields:
+                    - path: ports[0].port
+                      envName: MY_DB_PORT
+                    - path: ip
+                      envName: MY_DB_IP
+       `, dbConfig);
+
+        await databasesRule.apply(ctx);
+
+        yamlMatch(ctx.serialize(), `
+            metadata:
+              name: appname
+              namespace: main
+            spec:
+              accessPolicy:
+                outbound:
+                  external:
+                    - host: database-host
+                      ip: 10.0.0.12
+                      ports:
+                        - name: sql
+                          port: 5432
+                          protocol: TCP
+              env:
+                - name: MY_DB_PORT
+                  value: 5432
+                - name: MY_DB_IP
+                  value: 10.0.0.12
+       `)
+    });
 });
