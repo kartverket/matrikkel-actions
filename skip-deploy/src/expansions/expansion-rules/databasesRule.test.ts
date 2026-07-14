@@ -1,7 +1,7 @@
-import { describe, it, expect, spyOn } from 'bun:test';
+import { describe, it  } from 'bun:test';
 import {testContext, yamlMatch} from "./rule.testutils.ts";
-import {envGsmSecretRule} from "./envGsmSecretRule.ts";
 import {databasesRule} from "./databasesRule.ts";
+import {ensureStringEnv} from "../post-processing-rules/ensure-string-env.ts";
 
 const dbConfig = `
 databases:
@@ -65,6 +65,7 @@ describe('databasesRule', () => {
        `, dbConfig);
 
         await databasesRule.apply(ctx);
+        await ensureStringEnv.apply(ctx);
 
         yamlMatch(ctx.serialize(), `
             metadata:
@@ -82,7 +83,7 @@ describe('databasesRule', () => {
                           protocol: TCP
               env:
                 - name: MY_DB_PORT
-                  value: 5432
+                  value: "5432"
                 - name: MY_DB_IP
                   value: 10.0.0.12
        `)

@@ -1,12 +1,16 @@
 import * as core from "@actions/core";
 import {requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
 import * as yaml from "yaml";
-import type {DatabaseRuleDependencies} from "./rules/databasesRule.ts";
+import type {DatabaseRuleDependencies} from "./expansion-rules/databasesRule.ts";
 
 export type ExpansionRule = {
     readonly name: string;
     apply(context: ApplicationExpansionContext): Promise<void> | void;
 }
+export type PostProcessingRule = {
+    readonly name: string;
+    apply(context: ApplicationExpansionContext): Promise<void> | void;
+};
 
 export type ApplicationExpansionDependencies = {}
     & DatabaseRuleDependencies;

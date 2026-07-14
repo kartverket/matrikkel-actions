@@ -7,7 +7,7 @@ import {Duration} from "../../utils/Duration.ts";
 import {centerFactory, fatal, getRequiredInput} from "../../utils/utils.ts";
 import * as core from "@actions/core";
 import {groupBy} from "../../utils/fn-utils.ts";
-import {createAppsRepoDatabaseMetadataResolver} from "./expansions/rules/databasesRule.ts";
+import {createAppsRepoDatabaseMetadataResolver} from "./expansions/expansion-rules/databasesRule.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
