@@ -4,8 +4,8 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import * as yaml from "yaml";
 import {expandKubernetesManifests} from "./expansion.ts";
-import {createAppsRepoDatabaseMetadataResolver, type DatabaseMetadataResolver} from "./rules/databasesRule.ts";
-import {trimIndent} from "./rules/rule.testutils.ts";
+import {createAppsRepoDatabaseMetadataResolver, type DatabaseMetadataResolver} from "./expansion-rules/databasesRule.ts";
+import {trimIndent} from "./expansion-rules/rule.testutils.ts";
 
 const baseApplication = `
 apiVersion: skiperator.kartverket.no/v1alpha1

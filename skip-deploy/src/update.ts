@@ -4,7 +4,7 @@ import * as core from '@actions/core';
 import {findAppDescriptor, interpolateResource, readAppInputs} from "./common.ts";
 import { expandKubernetesManifests } from "./expansions/expansion.ts";
 import {fatal, getInput} from "../../utils/utils.ts";
-import {createAppsRepoDatabaseMetadataResolver} from "./expansions/rules/databasesRule.ts";
+import {createAppsRepoDatabaseMetadataResolver} from "./expansions/expansion-rules/databasesRule.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
