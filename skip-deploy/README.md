@@ -8,6 +8,17 @@ This is the low-level deploy action. The recommended setup is to create a team-s
 identity provider, and service account. Application repositories should normally call that wrapper instead of calling
 `skip-deploy` directly.
 
+## Prerequisites
+
+- The caller workflow must grant `id-token: write`.
+- The caller repository must be allowed by the OctoSTS configuration for the selected `identity`. ([example](https://github.com/kartverket/heimdall-apps/blob/main/.github/chainguard/matrikkel-rest-api-eiendom.sts.yaml))
+- The application must be added to gcp service accounts. ([example](https://github.com/kartverket/gcp-service-accounts/blob/main/resources.yaml#L88))
+- The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update
+  resource files inside those directories.
+- Applications that use `spec.databases` must have `env/<cluster>/<namespace>/database-metadata.yaml` in the apps repo.
+- For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments,
+  replicasets, statefulsets, and pods in the rendered namespaces.
+
 ## How It Works
 
 1. Checks out the caller repository so resource files can be read from the workflow workspace.
@@ -229,13 +240,3 @@ databases:
 The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into
 `spec.accessPolicy.outbound.external` in the apps repo output. Resolved URL, host, and IP values are redacted from
 `print_payload` logs.
-
-## Prerequisites
-
-- The caller workflow must grant `id-token: write`.
-- The caller repository must be allowed by the OctoSTS configuration for the selected `identity`.
-- The apps repo must contain the target `env/<cluster>/<namespace>/` directories. The action can create or update
-  resource files inside those directories.
-- Applications that use `spec.databases` must have `env/<cluster>/<namespace>/database-metadata.yaml` in the apps repo.
-- For `wait: "true"`, the service account must be allowed to authenticate to the cluster and read deployments,
-  replicasets, statefulsets, and pods in the rendered namespaces.
