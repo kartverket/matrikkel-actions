@@ -41,14 +41,28 @@ export async function readAppInputs() {
     }
 }
 
-export function interpolateResource(input: { resource: string, vars: Record<string, string>}): string {
-    return input.resource.replace(
+type Deployment = { resource: string; content: string, variables: Record<string, string>};
+export async function* getDeployments(
+    resources: string[],
+    varMatrix: Array<Record<string, string>>
+): AsyncGenerator<Deployment> {
+    for (const resource of resources) {
+        const file = Bun.file(resource);
+        const content = await file.text()
+        for (const variables of varMatrix) {
+            yield { resource, content, variables }
+        }
+    }
+}
+
+export function interpolateResource(input: { content: string, variables: Record<string, string>}): string {
+    return input.content.replace(
         /{{\s*([^{}]+?)\s*}}/g,
         (_, key: string) => {
-            if (!(key in input.vars)) {
+            if (!(key in input.variables)) {
                 throw new Error(`Missing template variable: ${key}`);
             }
-            return input.vars[key]!;
+            return input.variables[key]!;
         }
     );
 }
