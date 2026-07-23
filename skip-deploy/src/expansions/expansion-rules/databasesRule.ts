@@ -9,8 +9,7 @@ import {require} from "../../../../utils/fn-utils.ts";
 import {addEnvironmentVariable} from "../operations/addEnvironmentVariable.ts";
 import {addExternalOutboundAccessPolicy} from "../operations/addAccessPolicy.ts";
 
-export const DatabaseMetadata = z.object({
-    name: z.string(),
+const DatabaseMetadataBase = {
     url: z.string(),
     host: z.string(),
     ip: z.string(),
@@ -19,9 +18,22 @@ export const DatabaseMetadata = z.object({
             name: z.string(),
             port: z.number(),
             protocol: z.string(),
-        })
+        }),
     ),
-});
+};
+
+export const DatabaseMetadata = z.union([
+    z.object({
+        ...DatabaseMetadataBase,
+        name: z.string(),
+    }).strict(),
+
+    z.object({
+        ...DatabaseMetadataBase,
+        names: z.array(z.string()),
+    }).strict(),
+]);
+
 export type DatabaseMetadata = z.infer<typeof DatabaseMetadata>;
 
 export const DatabaseMetadataFile = z.object({
@@ -126,9 +138,20 @@ async function readNamespaceDatabaseMetadata(path: string): Promise<Map<string, 
 
     const metadataByName = new Map<string, DatabaseMetadata>();
     for (const database of metadata.databases) {
-        require(!metadataByName.has(database.name), () => `Duplicate database metadata name "${database.name}" in ${path}`);
-        metadataByName.set(database.name, database);
+        const names = getNamesFromDBMetadata(database);
+        for (const name of names) {
+            require(!metadataByName.has(name), () => `Duplicate database metadata name "${name}" in ${path}`);
+            metadataByName.set(name, database);
+        }
     }
 
     return metadataByName;
+}
+
+export function getNamesFromDBMetadata(metadata: DatabaseMetadata): string[] {
+    if ('name' in metadata) {
+        return [metadata.name]
+    } else {
+        return metadata.names
+    }
 }

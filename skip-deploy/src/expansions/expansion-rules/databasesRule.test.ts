@@ -1,7 +1,8 @@
-import { describe, it  } from 'bun:test';
-import {testContext, yamlMatch} from "./rule.testutils.ts";
-import {databasesRule} from "./databasesRule.ts";
+import { describe, expect, it } from 'bun:test';
+import {testContext, trimIndent, yamlMatch} from "./rule.testutils.ts";
+import {DatabaseMetadataFile, databasesRule} from "./databasesRule.ts";
 import {ensureStringEnv} from "../post-processing-rules/ensure-string-env.ts";
+import * as yaml from "yaml";
 
 const dbConfig = `
 databases:
@@ -13,11 +14,19 @@ databases:
       - name: sql
         port: 5432
         protocol: TCP
+  - names: [dummy1, dummy2]
+    url: jdbc:postgresql://database-host:5432/database-name
+    host: database-host
+    ip: 10.0.0.12
+    ports:
+      - name: sql
+        port: 5432
+        protocol: TCP
 `;
 
 describe('databasesRule', () => {
-   it('should validate database configuration', async () => {
-       const ctx = testContext(`
+    it('should validate database configuration', async () => {
+        const ctx = testContext(`
             metadata:
               name: appname
               namespace: main
@@ -27,9 +36,9 @@ describe('databasesRule', () => {
                   envName: MY_DB_URL
        `, dbConfig);
 
-       await databasesRule.apply(ctx);
+        await databasesRule.apply(ctx);
 
-       yamlMatch(ctx.serialize(), `
+        yamlMatch(ctx.serialize(), `
             metadata:
               name: appname
               namespace: main
@@ -47,7 +56,7 @@ describe('databasesRule', () => {
                 - name: MY_DB_URL
                   value: jdbc:postgresql://database-host:5432/database-name
        `)
-   });
+    });
 
     it('should use the specified config-field', async () => {
         const ctx = testContext(`
@@ -87,5 +96,73 @@ describe('databasesRule', () => {
                 - name: MY_DB_IP
                   value: 10.0.0.12
        `)
+    });
+});
+
+describe('Parsing DatabaseMetadataFile', () => {
+    it('should support single name', () => {
+        const data = trimIndent(`
+            databases:
+              - name: my-db
+                url: jdbc:postgresql://database-host:5432/database-name
+                host: database-host
+                ip: 10.0.0.12
+                ports:
+                  - name: sql
+                    port: 5432
+                    protocol: TCP
+        `)
+        const result = DatabaseMetadataFile.safeParse(yaml.parse(data));
+
+        expect(result.success).toBeTrue();
+        expect(result.data?.databases.length).toBe(1);
+    });
+    it('should support multiple names', () => {
+        const data = trimIndent(`
+            databases:
+              - names: [my-db, my-db2]
+                url: jdbc:postgresql://database-host:5432/database-name
+                host: database-host
+                ip: 10.0.0.12
+                ports:
+                  - name: sql
+                    port: 5432
+                    protocol: TCP
+        `)
+        const result = DatabaseMetadataFile.safeParse(yaml.parse(data));
+        expect(result.success).toBeTrue();
+        expect(result.data?.databases.length).toBe(1);
+    });
+    it('should fail if no names are present', () => {
+        const data = trimIndent(`
+            databases:
+              - url: jdbc:postgresql://database-host:5432/database-name
+                host: database-host
+                ip: 10.0.0.12
+                ports:
+                  - name: sql
+                    port: 5432
+                    protocol: TCP
+        `)
+        const result = DatabaseMetadataFile.safeParse(yaml.parse(data));
+
+        expect(result.error).not.toBeUndefined();
+    });
+    it('should fail if both name-fields are used', () => {
+        const data = trimIndent(`
+            databases:
+              - name: my-db
+                names: [db1, db2]
+                url: jdbc:postgresql://database-host:5432/database-name
+                host: database-host
+                ip: 10.0.0.12
+                ports:
+                  - name: sql
+                    port: 5432
+                    protocol: TCP
+        `)
+        const result = DatabaseMetadataFile.safeParse(yaml.parse(data));
+
+        expect(result.error).not.toBeUndefined();
     });
 });

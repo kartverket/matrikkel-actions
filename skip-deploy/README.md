@@ -235,6 +235,14 @@ databases:
       - name: sql
         port: 5432
         protocol: TCP
+  - names: [secondary, extraname]
+    url: jdbc:postgresql://database-host:5432/database-name
+    host: database-host
+    ip: 10.0.0.12
+    ports:
+      - name: sql
+        port: 5432
+        protocol: TCP
 ```
 
 The resolved `url` is added to `spec.env` using `envName`, and `host`, `ip`, and `ports` are merged into
