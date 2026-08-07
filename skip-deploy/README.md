@@ -52,6 +52,9 @@ inputs:
   resource:
     description: Comma-separated resource files from the caller repository
     required: true
+  var_files:
+    description: Comma-separated list of files containing variables.
+    required: false
   var:
     description: Newline-separated variable rows, each row using comma-separated key=value pairs
     required: false
@@ -73,6 +76,7 @@ runs:
         service_account: my-deploy@my-project.iam.gserviceaccount.com
         cluster: ${{ inputs.cluster }}
         resource: ${{ inputs.resource }}
+        var_files: ${{ inputs.var_files }}
         var: ${{ inputs.var }}
         wait: ${{ inputs.wait }}
 ```
@@ -122,11 +126,14 @@ jobs:
 | `service_account`            | only when `wait` is `true` |         | Service account used for Kubernetes authentication.                                   |
 | `cluster`                    | yes                        |         | Kubernetes fleet membership/cluster name and apps-repo environment directory.         |
 | `resource`                   | yes                        |         | Comma-separated resource files. Paths are relative to the caller repository checkout. |
+| `var_files`                  | no                         |         | Comma-separated list of files containing variables.                                   |
 | `var`                        | no                         |         | Newline-separated variable rows. Each row is comma-separated `key=value` pairs.       |
 | `dry_run`                    | no                         | `false` | Render and validate input without writing, committing, pushing, or waiting.           |
 | `print_payload`              | no                         | `false` | Print rendered resource files to the workflow log.                                    |
 | `wait`                       | no                         | `true`  | Wait until Kubernetes reports the rendered deployment versions ready or failed.       |
 | `timeout`                    | no                         | `10m`   | Wait timeout. Supported suffixes are `ms`, `s`, `m`, and `h`.                         |
+
+**NB!!** When specifying `var_files` only a single line of variables in `var` is allowed.
 
 ## Templating
 

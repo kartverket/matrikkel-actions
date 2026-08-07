@@ -21,6 +21,7 @@ jobs:
           resource: .skip/dev/app.yaml,.skip/dev/db.yaml
           timeout: 10m
           wait: "true"
+          # Or spesify "var_files: file1.yaml,file2.yaml", but then only a single line in "var" is permitted.
           var: |
             namespace=main,image=repo/app:123,date=2026-05-22
             namespace=readonly,image=repo/app:123,date=2026-05-22
@@ -30,15 +31,16 @@ The OctoSTS identity is the caller repository name: `${{ github.event.repository
 
 ## Inputs
 
-| Input | Required | Default | Description |
-| --- | --- | --- | --- |
-| `cluster` | yes | | Heimdall Kubernetes cluster to deploy to. Supported values are currently `atkv3-dev-user-cluster` and `atkv3-prod-user-cluster`. |
-| `resource` | yes | | Comma-separated resource files from the caller repository checkout. |
-| `var` | no | | Newline-separated variable rows. Each row is comma-separated `key=value` pairs. |
-| `dry_run` | no | `false` | Render and validate input without writing, committing, pushing, or waiting. |
-| `print_payload` | no | `false` | Print rendered resources to the workflow log. |
-| `wait` | no | `true` | Wait until Kubernetes reports the rendered deployment versions ready or failed. |
-| `timeout` | no | `10m` | Wait timeout. Supported suffixes are `ms`, `s`, `m`, and `h`. |
+| Input           | Required | Default | Description                                                                                                                      |
+|-----------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------|
+| `cluster`       | yes      |         | Heimdall Kubernetes cluster to deploy to. Supported values are currently `atkv3-dev-user-cluster` and `atkv3-prod-user-cluster`. |
+| `resource`      | yes      |         | Comma-separated resource files from the caller repository checkout.                                                              |
+| `var_files`     | no       |         | Comma-separated list of files containing variables.                                                                              |
+| `var`           | no       |         | Newline-separated variable rows. Each row is comma-separated `key=value` pairs.                                                  |
+| `dry_run`       | no       | `false` | Render and validate input without writing, committing, pushing, or waiting.                                                      |
+| `print_payload` | no       | `false` | Print rendered resources to the workflow log.                                                                                    |
+| `wait`          | no       | `true`  | Wait until Kubernetes reports the rendered deployment versions ready or failed.                                                  |
+| `timeout`       | no       | `10m`   | Wait timeout. Supported suffixes are `ms`, `s`, `m`, and `h`.                                                                    |
 
 ## Resource Format
 

@@ -7,19 +7,14 @@ export async function readAppInputs() {
     const cluster = getRequiredInput('cluster');
     const resource = getRequiredInput('resource');
     const varMatrixStr = getInput('var');
+    const varFile = getInput('var_files');
 
     const workspace = process.env['GITHUB_WORKSPACE'];
-    const resources = resource.split(',')
-        .map(it => it.trim())
-        .filter(Boolean)
-        .map(it => workspace ? `${workspace}/${it}` : it);
 
+    const resources = await parseFilelist(workspace, resource);
     require(resources.length > 0, () => `Must provide at least one resource file`)
-    for (const resource of resources) {
-        const file = Bun.file(resource)
-        const exists = await file.exists()
-        require(exists, () => `"${resource}" was not found`);
-    }
+
+    const varFiles = await parseFilelist(workspace, varFile);
 
     const varMatrix: Array<Record<string, string>> = varMatrixStr
         ? varMatrixStr
@@ -37,8 +32,49 @@ export async function readAppInputs() {
     return {
         cluster,
         resources,
-        varMatrix
+        varMatrix: await combineVarFilesAndMatrix(varFiles, varMatrix)
     }
+}
+
+async function parseFilelist(workspace: string | undefined, filestring: string | null): Promise<string[]> {
+    const files = (filestring?.split(',') ?? [])
+        .map(it => it.trim())
+        .filter(Boolean)
+        .map(it => workspace ? `${workspace}/${it}` : it);
+
+    for (const filename of files) {
+        const file = Bun.file(filename)
+        const exists = await file.exists()
+        require(exists, () => `"${filename}" was not found`);
+    }
+
+    return files;
+}
+
+async function combineVarFilesAndMatrix(
+    varFiles: string[],
+    varMatrix: Array<Record<string, string>>
+): Promise<Array<Record<string, string>>> {
+    if (varFiles.length === 0) return varMatrix;
+    if (varFiles.length > 0 && varMatrix.length > 1) {
+        throw new Error('Cannot specify more than one line of "VAR" in combination with "VAR_FILES"');
+    }
+    const varLine = varMatrix[0] ?? {};
+    const varFileContents: Array<Record<string, string>> = [];
+    for (const varFile of varFiles) {
+        const content = await Bun.file(varFile).text();
+        let vars;
+        if (varFile.endsWith('.json')) {
+            vars = JSON.parse(content);
+        } else if (varFile.endsWith('.yaml') || varFile.endsWith('.yml')) {
+            vars = yaml.parse(content);
+        } else {
+            throw new Error(`Unsupported format in "VAR_FILES": ${varFile}`);
+        }
+        varFileContents.push({ ...vars, ...varLine });
+    }
+
+    return varFileContents;
 }
 
 type Deployment = { resource: string; content: string, variables: Record<string, string>};

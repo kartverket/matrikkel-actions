@@ -42,8 +42,10 @@ inputs:
     description: Block until deployment has completed with either success, failure or error state.
     required: false
     default: "true"
+  var_files:
+    description: Comma-separated list of files containing variables. (JSON/YAML)
   var:
-    description: Newline-separated variable rows. Each row is comma-separated key=value pairs.
+    description: Newline-separated variable rows. Each row is comma-separated key=value pairs. Will be override any matching variables from files. Only one line is permitted if var_files are specified.
     required: false
 
 runs:
@@ -85,6 +87,7 @@ runs:
         CLUSTER: ${{ inputs.cluster }}
         RESOURCE: ${{ inputs.resource }}
         VAR: ${{ inputs.var }}
+        VAR_FILES: ${{ inputs.var_files }}
 
     - name: Validate Kubernetes wait inputs
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
@@ -137,6 +140,7 @@ runs:
         CLUSTER: ${{ inputs.cluster }}
         RESOURCE: ${{ inputs.resource }}
         VAR: ${{ inputs.var }}
+        VAR_FILES: ${{ inputs.var_files }}
         TIMEOUT: ${{ inputs.timeout }}
         SHELL_RECORDING_PATH: ${{ runner.temp }}/k8s-deployment-feedback/shell-recordings.ndjson
 
