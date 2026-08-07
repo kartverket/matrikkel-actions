@@ -36,8 +36,8 @@ export async function readAppInputs() {
     }
 }
 
-async function parseFilelist(workspace: string | undefined, filestring: string | null): Promise<string[]> {
-    const files = (filestring?.split(',') ?? [])
+export async function parseFilelist(workspace: string | undefined, filestring: string | null): Promise<string[]> {
+    const files = (filestring?.split(/[\r\n]+|,/) ?? [])
         .map(it => it.trim())
         .filter(Boolean)
         .map(it => workspace ? `${workspace}/${it}` : it);

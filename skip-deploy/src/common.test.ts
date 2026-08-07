@@ -1,5 +1,5 @@
 import {describe, expect, it, spyOn} from "bun:test";
-import {getDeployments, interpolate, readAppInputs} from "./common.ts";
+import {getDeployments, interpolate, parseFilelist, readAppInputs} from "./common.ts";
 import * as yaml from "yaml";
 
 describe('getDeployments', () => {
@@ -155,9 +155,38 @@ describe('interpolate', () => {
     });
 });
 
+describe('parseFilelist', () => {
+    const files = {
+        'betatest.yaml': '',
+        'prodtest.yaml': '',
+        'kommunetest.yaml': '',
+    };
+
+    it('should split by commas', () => {
+        withFilesystem(files, async () => {
+            const files = await parseFilelist(process.cwd(), 'betatest.yaml,prodtest.yaml');
+            expect(files).toHaveLength(2);
+        });
+    });
+
+    it('should split by newlines', () => {
+        withFilesystem(files, async () => {
+            const files = await parseFilelist(process.cwd(), ['betatest.yaml', 'kommunetest.yaml,prodtest.yaml'].join('\n'));
+            expect(files).toHaveLength(3);
+        });
+    });
+
+    it('should validate files exists', () => {
+        withFilesystem(files, async () => {
+            expect(() => parseFilelist(process.cwd(), 'not-valid.yaml'))
+                .toThrow(`"${process.cwd()}/not-valid.yaml" was not found`)
+        });
+    });
+});
+
 async function withEnv(
     env: Record<string, string | undefined>,
-    fn:  () => void | Promise<void>,
+    fn: () => void | Promise<void>,
 ) {
     const originalEntries: Array<[string, string | undefined]> = Object.keys(env)
         .map((key) => [key, process.env[key]]);
@@ -198,6 +227,7 @@ async function withFilesystem(
     }
 
 }
+
 function setEnvEntries(entries: Array<[string, string | undefined]>) {
     for (const [key, value] of entries) {
         process.env[key] = value;
