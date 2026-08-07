@@ -1,5 +1,5 @@
 import {describe, expect, it, spyOn} from "bun:test";
-import {getDeployments, readAppInputs} from "./common.ts";
+import {getDeployments, interpolate, readAppInputs} from "./common.ts";
 import * as yaml from "yaml";
 
 describe('getDeployments', () => {
@@ -133,6 +133,25 @@ describe('readAppInputs', () => {
                 ]);
             })
         );
+    });
+});
+
+describe('interpolate', () => {
+    const template = 'My name is {{name:-Ola}}, I live in {{   location    }}';
+
+    it('should replace variables with values', () => {
+        const result = interpolate(template, { name: 'Per', location: 'Oslo' });
+        expect(result).toEqual('My name is Per, I live in Oslo');
+    });
+
+    it('should throw error if value is not found', () => {
+        expect(() => interpolate(template, {}))
+            .toThrow('Missing template variable: location');
+    });
+
+    it('should use default value', () => {
+        const result = interpolate(template, { location: 'Bergen' });
+        expect(result).toEqual('My name is Ola, I live in Bergen');
     });
 });
 

@@ -1,7 +1,7 @@
 import {$} from 'bun';
 import * as fs from 'node:fs/promises';
 import * as core from '@actions/core';
-import {findAppDescriptor, getDeployments, interpolateResource, readAppInputs} from "./common.ts";
+import {findAppDescriptor, getDeployments, interpolate, readAppInputs} from "./common.ts";
 import { expandKubernetesManifests } from "./expansions/expansion.ts";
 import {fatal, getInput} from "../../utils/utils.ts";
 import {createAppsRepoDatabaseMetadataResolver} from "./expansions/expansion-rules/databasesRule.ts";
@@ -19,7 +19,7 @@ const resolveDatabaseMetadata = createAppsRepoDatabaseMetadataResolver(cluster);
 
 for await (const deployment of getDeployments(resources, varMatrix)) {
     const { resource, content, variables } = deployment;
-    const output = interpolateResource({ content, variables });
+    const output = interpolate(content, variables);
     const expandedManifests = await expandKubernetesManifests(cluster, output, {
         databases: resolveDatabaseMetadata
     });

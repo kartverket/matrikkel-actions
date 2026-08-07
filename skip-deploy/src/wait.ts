@@ -1,4 +1,4 @@
-import {findAppDescriptor, getDeployments, interpolateResource, readAppInputs} from "./common.ts";
+import {findAppDescriptor, getDeployments, interpolate, readAppInputs} from "./common.ts";
 import { expandKubernetesManifests} from "./expansions/expansion.ts";
 import {type KubernetesAppIdentificator, KubernetesAppIdentificatorSerde} from "../../utils/common-types.ts";
 import {createShell} from "@nutgaard/bun-recording-shell";
@@ -22,7 +22,7 @@ const resolveDatabaseMetadata = createAppsRepoDatabaseMetadataResolver(cluster);
 const descriptorsToWaitFor: KubernetesAppIdentificator[] = [];
 for await (const deployment of getDeployments(resources, varMatrix)) {
     const { content, variables } = deployment;
-    const output = interpolateResource({ content, variables });
+    const output = interpolate(content, variables);
     const expandedManifests = await expandKubernetesManifests(cluster, output, {
         databases: resolveDatabaseMetadata
     });

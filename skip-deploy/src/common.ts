@@ -91,14 +91,15 @@ export async function* getDeployments(
     }
 }
 
-export function interpolateResource(input: { content: string, variables: Record<string, string>}): string {
-    return input.content.replace(
-        /{{\s*([^{}]+?)\s*}}/g,
-        (_, key: string) => {
-            if (!(key in input.variables)) {
+export function interpolate(content: string, variables: Record<string, string>): string {
+    return content.replace(
+        /{{\s*([^{}:]+?)\s*(?::-\s*(\S+)\s*)?}}/g,
+        (_, key: string, defaultValue: string | undefined) => {
+            const value = variables[key] ?? defaultValue;
+            if (value == null) {
                 throw new Error(`Missing template variable: ${key}`);
             }
-            return input.variables[key]!;
+            return value;
         }
     );
 }
