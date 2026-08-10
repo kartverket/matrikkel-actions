@@ -23,8 +23,11 @@ inputs:
     description: Block until deployment has completed with either success, failure or error state.
     required: false
     default: "true"
+  var_files:
+    description: Comma-separated list of files containing variables (JSON/YAML).
+    required: false
   var:
-    description: Newline-separated variable rows. Each row is comma-separated key=value pairs.
+    description: Newline-separated variable rows. Each row is comma-separated key=value pairs. Will be override any matching variables from files. Only one line is permitted if var_files are specified.
     required: false
   config:
     description: Holds normal configuration for (should not be specified by users)
@@ -61,4 +64,5 @@ runs:
         resource: ${{ inputs.resource }}
         timeout: ${{ inputs.timeout }}
         wait: ${{ inputs.wait }}
+        var_files: ${{ inputs.var_files }}
         var: ${{ inputs.var }}
