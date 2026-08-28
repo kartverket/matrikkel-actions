@@ -1,7 +1,7 @@
 name: "Slack Prod Approval - Setup"
 description: "Post a message to slack for approval"
 runs:
-  using: "node20"
+  using: "node24"
   main: "../dist/index.js"
 inputs:
   channel:
