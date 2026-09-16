@@ -28,7 +28,7 @@ runs:
         identity: ${{ inputs.identity }}
 
     - name: Checkout the repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ${{ inputs.repository }}
         ref: main
