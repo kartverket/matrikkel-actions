@@ -6,7 +6,9 @@
 version: 2
 updates:
   - package-ecosystem: 'github-actions'
-    directory: '.github/workflows'
+    directories:
+      - '.github/workflows'
+      - '/**'
     schedule:
       interval: 'daily'
       time: '07:00'
