@@ -118,7 +118,7 @@ runs:
 
     - name: Setup Kubectl
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
-      uses: azure/setup-kubectl@v4
+      uses: azure/setup-kubectl@v5
 
     - name: Authenticate to Kubernetes
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
