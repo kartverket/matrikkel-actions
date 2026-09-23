@@ -21,5 +21,5 @@ jobs:
         identity: matrikkel
         apps: |
           atkv3-dev:matrikkel-main:matrikkel-innsyn:4.2.3
-          atkv3-prod:matrikkel-nd:matrikkel-innsyn:4.2.3
+          atkv3-prod:matrikkel-prodtest:matrikkel-innsyn:4.2.3
 ```
