@@ -85,13 +85,18 @@ function buildMessage(channel: string, state: ApprovalState) {
             "text": commits
         }
     } : null;
-    const approverElement: ContextBlockElement = state.approver ? {
-        "type": "mrkdwn",
-        "text": `*Godkjent av:* <https://github.com/${state.approver}|${state.approver}>`
-    } : {
-        "type": "mrkdwn",
-        "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
-    };
+    let approverElement: ContextBlockElement | null = null;
+    if (state.approver) {
+        approverElement = {
+            "type": "mrkdwn",
+            "text": `*Godkjent av:* <https://github.com/${state.approver}|${state.approver}>`
+        };
+    } else if (state.status === 'AWAITING') {
+        approverElement = {
+            "type": "mrkdwn",
+            "text": `<https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}|Gå til godkjenning?>`
+        };
+    }
     const approvedAtElement: ContextBlockElement | null = state.approvedAt ? {
         "type": "mrkdwn",
         "text": `*Prodsatt:* Kl ${new Date().toLocaleTimeString('nb-no')}`
