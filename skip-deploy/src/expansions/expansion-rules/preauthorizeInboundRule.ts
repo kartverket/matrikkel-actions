@@ -19,6 +19,11 @@ type Config = z.infer<typeof Config>;
 export const preauthorizeInboundRule: ExpansionRule = {
     name: 'preauthorizeInboundRule',
     async apply(context: ApplicationExpansionContext): Promise<void> {
+        // SKIPJob does not support inbound access policy or ports
+        // (see https://skip.kartverket.no/docs/jobber-skip), so there is
+        // nothing to pre-authorize for jobs.
+        if (context.isJob) return;
+
         const azureAdAppRegistration = context.findManifestOfKind('AzureAdApplication');
         if (!azureAdAppRegistration) return;
 

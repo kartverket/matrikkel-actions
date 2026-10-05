@@ -2,6 +2,7 @@ import * as yaml from "yaml";
 import {require} from "../../../utils/fn-utils.ts";
 import {
     ApplicationExpansionContext,
+    isMainManifestKind,
     type ApplicationExpansionDependencies,
     type ExpansionRule,
     type PostProcessingRule,
@@ -37,13 +38,13 @@ export async function expandKubernetesManifests(
         .filter(Boolean);
 
 
-    const applicationManifests = manifests.filter(it => isObject(it) && it.kind === 'Application');
-    const restManifests = manifests.filter(it => isObject(it) && it.kind !== 'Application');
+    const mainManifests = manifests.filter(it => isObject(it) && isMainManifestKind(it.kind));
+    const restManifests = manifests.filter(it => isObject(it) && !isMainManifestKind(it.kind));
 
-    require(applicationManifests.length > 0, () => `Could not find Application manifest`);
+    require(mainManifests.length > 0, () => `Could not find Application or SKIPJob manifest`);
 
     const expanded: ExpandedManifest[] = [];
-    for (const appManifest of applicationManifests) {
+    for (const appManifest of mainManifests) {
         const context = new ApplicationExpansionContext(cluster, appManifest, restManifests, dependencies);
 
         for (const rule of rules) {

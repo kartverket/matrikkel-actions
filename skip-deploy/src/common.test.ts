@@ -1,6 +1,97 @@
 import {describe, expect, it, spyOn} from "bun:test";
-import {getDeployments, interpolate, parseFilelist, readAppInputs} from "./common.ts";
+import {findAppDescriptor, getDeployments, interpolate, parseFilelist, readAppInputs} from "./common.ts";
 import * as yaml from "yaml";
+
+describe('findAppDescriptor', () => {
+    it('should find namespace, appname and version from an Application manifest', () => {
+        const result = findAppDescriptor(`
+apiVersion: skiperator.kartverket.no/v1alpha1
+kind: Application
+metadata:
+  name: matrikkel-ekstern-data
+  namespace: main
+spec:
+  image: ghcr.io/kartverket/matrikkel-ekstern-data:1.2.3
+  port: 8080
+`);
+        expect(result).toEqual({
+            namespace: 'main',
+            appname: 'matrikkel-ekstern-data',
+            version: '1.2.3',
+        });
+    });
+
+    it('should find namespace, appname and version from a v1alpha1 SKIPJob manifest', () => {
+        const result = findAppDescriptor(`
+apiVersion: skiperator.kartverket.no/v1alpha1
+kind: SKIPJob
+metadata:
+  name: databricks-til-elastic
+  namespace: matrikkel-prodtest
+spec:
+  cron:
+    schedule: "0 * * * *"
+  container:
+    image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
+`);
+        expect(result).toEqual({
+            namespace: 'matrikkel-prodtest',
+            appname: 'databricks-til-elastic',
+            version: '1.0.0',
+        });
+    });
+
+    it('should find namespace, appname and version from a v1beta1 SKIPJob manifest', () => {
+        const result = findAppDescriptor(`
+apiVersion: skiperator.kartverket.no/v1beta1
+kind: SKIPJob
+metadata:
+  name: databricks-til-elastic
+  namespace: matrikkel-prodtest
+spec:
+  cron:
+    schedule: "0 * * * *"
+  image: ghcr.io/kartverket/databricks-til-elastic:2.0.0
+`);
+        expect(result).toEqual({
+            namespace: 'matrikkel-prodtest',
+            appname: 'databricks-til-elastic',
+            version: '2.0.0',
+        });
+    });
+
+    it('should find the main manifest among extra resources', () => {
+        const result = findAppDescriptor(`
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: appname-allow-tcp
+spec:
+  podSelector:
+    matchLabels:
+      app: appname
+---
+apiVersion: skiperator.kartverket.no/v1alpha1
+kind: SKIPJob
+metadata:
+  name: databricks-til-elastic
+  namespace: matrikkel-prodtest
+spec:
+  container:
+    image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
+`);
+        expect(result.appname).toBe('databricks-til-elastic');
+    });
+
+    it('should reject yaml without an Application or SKIPJob manifest', () => {
+        expect(() => findAppDescriptor(`
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: appname-allow-tcp
+`)).toThrow('Could not find Application or SKIPJob manifest');
+    });
+});
 
 describe('getDeployments', () => {
     it('should combine resources with variables', () => {

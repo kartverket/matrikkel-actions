@@ -2,6 +2,7 @@ import {require, requireNotNullOrEmpty} from "../../utils/fn-utils.ts";
 import {ImageDescriptorSerde, type KubernetesAppIdentificator} from "../../utils/common-types.ts";
 import * as yaml from "yaml";
 import { getInput, getRequiredInput } from "../../utils/utils.ts";
+import {isMainManifestKind} from "./expansions/ApplicationExpansionContext.ts";
 
 export async function readAppInputs() {
     const cluster = getRequiredInput('cluster');
@@ -104,8 +105,8 @@ export function interpolate(content: string, variables: Record<string, string>):
     );
 }
 
-function isApplication(manifest: any): boolean {
-    return isObject(manifest) && manifest.kind === 'Application';
+function isMainManifest(manifest: any): boolean {
+    return isObject(manifest) && isMainManifestKind(manifest.kind);
 }
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -115,11 +116,14 @@ function isObject(value: unknown): value is Record<string, any> {
 export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator {
     const content = yaml.parseAllDocuments(yamlfile)
         .map(it => it.toJSON())
-        .find(isApplication);
-    require(content != null, () => `Could not find Application manifest`);
+        .find(isMainManifest);
+    require(content != null, () => `Could not find Application or SKIPJob manifest`);
     const namespace = content.metadata.namespace;
     const appname = content.metadata.name;
-    const { version } = ImageDescriptorSerde.deserialize(content.spec.image);
+    // v1alpha1 SKIPJob nests the image under spec.container; Application and
+    // v1beta1 SKIPJob have it directly under spec.
+    const containerSpec = content.spec?.container ?? content.spec;
+    const { version } = ImageDescriptorSerde.deserialize(containerSpec.image);
 
 
     requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
