@@ -40,6 +40,26 @@ spec:
         });
     });
 
+    it('should find namespace, appname and version from a v1alpha1 SKIPJob manifest', () => {
+        const result = findAppDescriptor(`
+apiVersion: skiperator.kartverket.no/v1alpha1
+kind: SKIPJob
+metadata:
+  name: databricks-til-elastic
+  namespace: matrikkel-prodtest
+spec:
+  cron:
+    schedule: "0 * * * *"
+  container:
+    image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
+`);
+        expect(result).toEqual({
+            namespace: 'matrikkel-prodtest',
+            appname: 'databricks-til-elastic',
+            version: '1.0.0',
+        });
+    });
+
     it('should find the main manifest among extra resources', () => {
         const result = findAppDescriptor(`
 apiVersion: networking.k8s.io/v1

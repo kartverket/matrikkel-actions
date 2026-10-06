@@ -113,6 +113,19 @@ function isObject(value: unknown): value is Record<string, any> {
     return typeof value === 'object' && value != null && !Array.isArray(value);
 }
 
+/**
+ * Reads the container image from a main manifest. `Application` and
+ * `v1beta1` SKIPJob manifests have `image` directly under `spec`, while the
+ * deprecated `v1alpha1` SKIPJob nests it under `spec.container.image` instead.
+ */
+function getImageField(content: any): string {
+    const isSkipJobV1Alpha1 = content.kind === 'SKIPJob'
+        && typeof content.apiVersion === 'string'
+        && content.apiVersion.includes('v1alpha1');
+
+    return isSkipJobV1Alpha1 ? content.spec?.container?.image : content.spec?.image;
+}
+
 export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator {
     const content = yaml.parseAllDocuments(yamlfile)
         .map(it => it.toJSON())
@@ -120,7 +133,7 @@ export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator 
     require(content != null, () => `Could not find Application or SKIPJob manifest`);
     const namespace = content.metadata.namespace;
     const appname = content.metadata.name;
-    const { version } = ImageDescriptorSerde.deserialize(content.spec.image);
+    const { version } = ImageDescriptorSerde.deserialize(getImageField(content));
 
 
     requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
