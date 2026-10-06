@@ -53,7 +53,6 @@ export class ApplicationExpansionContext {
         this.kind = appManifest.kind;
     }
 
-    /** Whether the main manifest is a `SKIPJob`, as opposed to an `Application`. */
     get isJob(): boolean {
         return this.kind === 'SKIPJob';
     }
