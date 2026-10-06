@@ -120,10 +120,7 @@ export function findAppDescriptor(yamlfile: string): KubernetesAppIdentificator 
     require(content != null, () => `Could not find Application or SKIPJob manifest`);
     const namespace = content.metadata.namespace;
     const appname = content.metadata.name;
-    // v1alpha1 SKIPJob nests the image under spec.container; Application and
-    // v1beta1 SKIPJob have it directly under spec.
-    const containerSpec = content.spec?.container ?? content.spec;
-    const { version } = ImageDescriptorSerde.deserialize(containerSpec.image);
+    const { version } = ImageDescriptorSerde.deserialize(content.spec.image);
 
 
     requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');

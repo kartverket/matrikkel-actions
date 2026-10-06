@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import {requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
+import {require, requireNotNullOrEmpty} from "../../../utils/fn-utils.ts";
 import * as yaml from "yaml";
 import type {DatabaseRuleDependencies} from "./expansion-rules/databasesRule.ts";
 
@@ -26,62 +26,14 @@ export function isMainManifestKind(kind: unknown): kind is MainManifestKind {
     return kind === 'Application' || kind === 'SKIPJob';
 }
 
-/**
- * skiperator's `v1alpha1` SKIPJob nests the "application-like" fields
- * (image, env, envFrom, accessPolicy, etc.) under `spec.container`, see
- * `ContainerSettings` in skiperator's api/v1alpha1/skipjob_types.go.
- * `Application` (and `v1beta1` SKIPJob) has these fields directly under
- * `spec` instead, see api/v1beta1/skipjob_types.go.
- */
-const SKIPJOB_V1ALPHA1_CONTAINER_FIELDS = [
-    'image', 'priority', 'command', 'resources', 'env', 'envFrom', 'filesFrom',
-    'additionalPorts', 'extraContainers', 'liveness', 'readiness', 'startup',
-    'accessPolicy', 'gcp', 'restartPolicy', 'podSettings',
-    // Custom extension fields consumed by skip-deploy's own expansion rules;
-    // not part of the skiperator CRD itself.
-    'databases', 'azure',
-] as const;
-
-function isSkipJobV1Alpha1(manifest: any): boolean {
-    return manifest.kind === 'SKIPJob'
-        && typeof manifest.apiVersion === 'string'
-        && manifest.apiVersion.includes('v1alpha1');
-}
-
-/**
- * Hoists `spec.container.*` fields up to `spec` in-place, so that the
- * existing expansion rules (written against `Application`'s flat `spec`)
- * work unmodified for a `v1alpha1` SKIPJob too.
- */
-function hoistContainerFields(manifest: any): void {
-    const container = manifest.spec?.container;
-    if (container == null) return;
-    delete manifest.spec.container;
-    Object.assign(manifest.spec, container);
-}
-
-/**
- * Reverses {@link hoistContainerFields} without mutating the input, by
- * moving the known container fields back under a `spec.container` object.
- * Used right before serializing a `v1alpha1` SKIPJob back to YAML.
- */
-function withLoweredContainerFields(manifest: any): any {
-    const spec = { ...manifest.spec };
-    const container: Record<string, any> = {};
-    for (const field of SKIPJOB_V1ALPHA1_CONTAINER_FIELDS) {
-        if (field in spec) {
-            container[field] = spec[field];
-            delete spec[field];
-        }
-    }
-    spec.container = container;
-    return { ...manifest, spec };
+function assertValidMainManifestKind(kind: unknown): asserts kind is MainManifestKind {
+    require(isMainManifestKind(kind), () => `Expected manifest kind to be "Application" or "SKIPJob", but was "${kind}"`);
 }
 
 export class ApplicationExpansionContext {
     public readonly namespace: string;
     public readonly appname: string;
-    public readonly kind: MainManifestKind | undefined;
+    public readonly kind: MainManifestKind;
 
     constructor(
         public readonly cluster: string,
@@ -94,21 +46,14 @@ export class ApplicationExpansionContext {
 
         requireNotNullOrEmpty(namespace, () => 'Could not find namespace in yaml');
         requireNotNullOrEmpty(appname, () => 'Could not find appname in yaml');
+        assertValidMainManifestKind(appManifest.kind);
 
         this.namespace = namespace;
         this.appname = appname;
-        this.kind = isMainManifestKind(appManifest.kind) ? appManifest.kind : undefined;
-
-        if (isSkipJobV1Alpha1(appManifest)) {
-            hoistContainerFields(appManifest);
-        }
+        this.kind = appManifest.kind;
     }
 
-    /**
-     * Whether the main manifest is a `SKIPJob`. Jobs do not support inbound
-     * access policy or ports, unlike `Application`
-     * (see https://skip.kartverket.no/docs/jobber-skip).
-     */
+    /** Whether the main manifest is a `SKIPJob`, as opposed to an `Application`. */
     get isJob(): boolean {
         return this.kind === 'SKIPJob';
     }
@@ -129,10 +74,7 @@ export class ApplicationExpansionContext {
     }
 
     serialize(): string {
-        const appManifest = isSkipJobV1Alpha1(this.appManifest)
-            ? withLoweredContainerFields(this.appManifest)
-            : this.appManifest;
-        return [appManifest, ...this.otherManifests]
+        return [this.appManifest, ...this.otherManifests]
             .map(it => yaml.stringify(it).trimEnd())
             .join('\n---\n') + '\n';
     }

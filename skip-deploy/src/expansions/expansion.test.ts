@@ -8,7 +8,7 @@ import {createAppsRepoDatabaseMetadataResolver, type DatabaseMetadataResolver} f
 import {trimIndent} from "./expansion-rules/rule.testutils.ts";
 
 const baseApplication = `
-apiVersion: skiperator.kartverket.no/v1alpha1
+apiVersion: skiperator.kartverket.no/v1beta1
 kind: Application
 metadata:
   namespace: main
@@ -19,7 +19,7 @@ spec:
 `;
 
 const baseSkipJob = `
-apiVersion: skiperator.kartverket.no/v1alpha1
+apiVersion: skiperator.kartverket.no/v1beta1
 kind: SKIPJob
 metadata:
   name: databricks-til-elastic
@@ -30,8 +30,7 @@ spec:
   job:
     ttlSecondsAfterFinished: 3600
     activeDeadlineSeconds: 3600
-  container:
-    image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
+  image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
 `;
 
 const unexpectedDatabaseResolver: DatabaseMetadataResolver = async (namespace, databaseName) => {
@@ -56,10 +55,8 @@ describe('expandKubernetesManifests', () => {
         expect(manifest).toHaveLength(1);
         expect(manifest[0].kind).toBe('SKIPJob');
         expect(manifest[0].spec.cron).toEqual({schedule: '0 * * * *'});
-        expect(manifest[0].spec.container.image).toBe('ghcr.io/kartverket/databricks-til-elastic:1.0.0');
-        expect(manifest[0].spec.container.envFrom).toBeUndefined();
-        // Container fields must stay nested, not leak onto spec directly
-        expect(manifest[0].spec.image).toBeUndefined();
+        expect(manifest[0].spec.image).toBe('ghcr.io/kartverket/databricks-til-elastic:1.0.0');
+        expect(manifest[0].spec.envFrom).toBeUndefined();
     });
 
     it('expands a complex SKIPJob with extra resources (GSM secrets, databases, NetworkPolicy)', async () => {
@@ -76,7 +73,7 @@ describe('expandKubernetesManifests', () => {
         };
 
         const manifest = trimIndent(`
-          apiVersion: skiperator.kartverket.no/v1alpha1
+          apiVersion: skiperator.kartverket.no/v1beta1
           kind: SKIPJob
           metadata:
             name: databricks-til-elastic
@@ -84,16 +81,15 @@ describe('expandKubernetesManifests', () => {
           spec:
             cron:
               schedule: "0 * * * *"
-            container:
-              image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
-              databases:
-                - name: primary
-                  envName: DATABASE_URL
-              env:
-                - name: DB_ADMIN_PASSWORD
-                  gsmSecretName: prod-matrikkel-db-admin-password
-                - name: NORMAL_ENV
-                  value: normal
+            image: ghcr.io/kartverket/databricks-til-elastic:1.0.0
+            databases:
+              - name: primary
+                envName: DATABASE_URL
+            env:
+              - name: DB_ADMIN_PASSWORD
+                gsmSecretName: prod-matrikkel-db-admin-password
+              - name: NORMAL_ENV
+                value: normal
           ---
           apiVersion: networking.k8s.io/v1
           kind: NetworkPolicy
@@ -111,18 +107,15 @@ describe('expandKubernetesManifests', () => {
         const [job, networkPolicy, externalSecret] = parseManifest(expanded!.manifest);
 
         expect(job.kind).toBe('SKIPJob');
-        expect(job.spec.container.env).toEqual(expect.arrayContaining([
+        expect(job.spec.env).toEqual(expect.arrayContaining([
             {name: 'NORMAL_ENV', value: 'normal'},
             {name: 'DATABASE_URL', value: 'jdbc:postgresql://db-host:5432/sergreg'},
         ]));
-        expect(job.spec.container.envFrom).toEqual([{secret: 'databricks-til-elastic-secrets'}]);
-        expect(job.spec.container.databases).toBeUndefined();
-        expect(job.spec.container.accessPolicy.outbound.external).toEqual([
+        expect(job.spec.envFrom).toEqual([{secret: 'databricks-til-elastic-secrets'}]);
+        expect(job.spec.databases).toBeUndefined();
+        expect(job.spec.accessPolicy.outbound.external).toEqual([
             {host: 'db-host', ip: '10.0.0.12', ports: [{name: 'sql', port: 5432, protocol: 'TCP'}]},
         ]);
-        // Fields must not leak onto spec directly
-        expect(job.spec.env).toBeUndefined();
-        expect(job.spec.accessPolicy).toBeUndefined();
 
         expect(externalSecret.kind).toBe('ExternalSecret');
         expect(networkPolicy.kind).toBe('NetworkPolicy');
@@ -131,21 +124,21 @@ describe('expandKubernetesManifests', () => {
     it('skips preauthorizeInboundRule for SKIPJob manifests', async () => {
         const expanded = await expand(`
 ${baseSkipJob}
-    azure:
-      application:
-        enabled: true
+  azure:
+    application:
+      enabled: true
 `);
 
         const manifest = parseManifest(expanded.manifest);
-        expect(manifest[0].spec.container.azure).toBeUndefined();
-        expect(manifest[0].spec.container.accessPolicy.outbound.external).toEqual([
+        expect(manifest[0].spec.azure).toBeUndefined();
+        expect(manifest[0].spec.accessPolicy.outbound.external).toEqual([
             {host: 'login.microsoftonline.com'},
         ]);
     });
 
     it('should keep extra resources', async () => {
         const manifest = trimIndent(`
-          apiVersion: skiperator.kartverket.no/v1alpha1
+          apiVersion: skiperator.kartverket.no/v1beta1
           kind: Application
           metadata:
             namespace: main
