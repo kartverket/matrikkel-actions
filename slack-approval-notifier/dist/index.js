@@ -40059,7 +40059,7 @@ var LaFLUT = {
   RUNNING: { icon: ":rocket:", color: "#42A5F5", text: "Prodsettes" },
   SUCCESS: { icon: ":white_check_mark:", color: "#2E7D32", text: "Suksess" },
   FAILURE: { icon: ":x:", color: "#D32F2F", text: "Feilet" },
-  CANCELLED: { icon: ":stop_sign:", color: "#F6C344", text: "Avbrutt" }
+  CANCELLED: { icon: ":rightwards_pushing_hand:", color: "#F6C344", text: "Avbrutt" }
 };
 async function postMessage(client, channel, state) {
   const response = await client.chat.postMessage(buildMessage(channel, state));
