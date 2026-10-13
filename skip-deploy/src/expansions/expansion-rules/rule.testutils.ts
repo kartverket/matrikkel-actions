@@ -40,6 +40,11 @@ export function yamlMatch(actual: string, expected: string) {
     );
 }
 
+export function yamlMatchAllContent(actual: string, expected: string) {
+    yamlMatch(actual, expected);
+    yamlMatch(expected, actual);
+}
+
 export function trimIndent(str: string): string {
     const lines = str.replace(/^\n/, "").split("\n")
 

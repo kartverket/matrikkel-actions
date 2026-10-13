@@ -1,5 +1,5 @@
 import {describe, it} from 'bun:test';
-import {testContext, yamlMatch} from "./rule.testutils.ts";
+import {testContext, yamlMatchAllContent} from "./rule.testutils.ts";
 import {azureApplicationRule} from "./azureApplicationRule.ts";
 
 
@@ -20,7 +20,8 @@ describe('', () => {
 
         await azureApplicationRule.apply(ctx);
 
-        yamlMatch(ctx.serialize(), `
+        yamlMatchAllContent(ctx.serialize(), `
+            kind: Application
             metadata:
               name: appname
               namespace: main
