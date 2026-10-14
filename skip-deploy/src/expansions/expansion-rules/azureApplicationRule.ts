@@ -47,6 +47,10 @@ export const azureApplicationRule: ExpansionRule = {
         const { secretName, manifest } = createAzureAdApplication(context.namespace, context.appname, spec);
         context.addManifest(manifest);
 
+        context.appManifest.spec.podSettings ??= {};
+        context.appManifest.spec.podSettings.annotations ??= {};
+        context.appManifest.spec.podSettings.annotations["reloader.stakater.com/search"] = "true";
+
         context.appManifest.spec.env ??= [];
         context.appManifest.spec.env.push(secretRef(secretName, 'AZURE_APP_CLIENT_ID'));
         context.appManifest.spec.env.push(secretRef(secretName, 'AZURE_APP_CLIENT_SECRET'));

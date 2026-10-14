@@ -29,6 +29,9 @@ describe('', () => {
                 outbound:
                   external:
                     - host: login.microsoftonline.com
+              podSettings:
+                annotations:
+                  reloader.stakater.com/search: "true"
               env:
                 - name: AZURE_APP_CLIENT_ID 
                   valueFrom:
