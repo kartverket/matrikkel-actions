@@ -41,6 +41,10 @@ describe('envGsmSecretRule', () => {
                 name: gsm
               target:
                 name: appname-secrets
+                template:
+                  metadata:
+                    annotations:
+                      reloader.stakater.com/match: "true"
               data:
                 - secretKey:  PASSWORD
                   remoteRef:
