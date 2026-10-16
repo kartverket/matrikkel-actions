@@ -202,6 +202,13 @@ ${baseApplication}
             },
             target: {
                 name: 'matrikkel-ekstern-data-secrets',
+                template:{
+                    metadata: {
+                        annotations: {
+                            'reloader.stakater.com/match': "true"
+                        }
+                    }
+                }
             },
             data: [
                 {

@@ -21,7 +21,14 @@ export function createExternalSecretManifest(namespace: string, appname: string,
                 name: 'gsm',
             },
             target: {
-                name
+                name,
+                template:{
+                    metadata: {
+                        annotations: {
+                            'reloader.stakater.com/match': "true"
+                        }
+                    }
+                }
             },
             data: [],
         },
