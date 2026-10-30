@@ -50,7 +50,11 @@ runs:
         project_id: ${{ inputs.kubernetes_project_id }}
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         service_account: ${{ inputs.service_account }}
-
+        
+    - name: Activate gcloud account
+      shell: bash
+      run: gcloud auth login --brief --cred-file="$GOOGLE_GHA_CREDS_PATH"
+  
     - name: Authenticate to Kubernetes
       shell: bash
       run: |
