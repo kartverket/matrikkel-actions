@@ -120,6 +120,11 @@ runs:
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       uses: azure/setup-kubectl@v5
 
+    - name: Activate gcloud account
+      if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
+      shell: bash
+      run: gcloud auth login --brief --cred-file="$GOOGLE_GHA_CREDS_PATH"
+
     - name: Authenticate to Kubernetes
       if: ${{ inputs.wait == 'true' && inputs.dry_run == 'false' }}
       shell: bash
