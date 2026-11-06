@@ -29,7 +29,7 @@ runs:
       uses: kartverket/matrikkel-actions/slack-approval-notifier/update-octo@main
       with:
         channel: 'C09V5AXA4R5' # heimdall-ci
-        repository: 'kartverket/heimdall-apps'
+        appsRepo: 'kartverket/heimdall-apps'
         identity: ${{ inputs.identity }}
         environment: ${{ inputs.environment }}
         appDescriptor: ${{ inputs.appDescriptor }}
