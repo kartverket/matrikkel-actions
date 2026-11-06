@@ -11,7 +11,12 @@ import {
 } from "./utils.js";
 import {WebClient} from "@slack/web-api";
 import * as github from "@actions/github";
-import {type AppDeployDescriptor, AppDeployDescriptorSerde} from "../../utils/common-types.ts";
+import {
+    type AppDeployDescriptor,
+    type RepoDescriptor,
+    AppDeployDescriptorSerde,
+    RepoDescriptorSerde
+} from "../../utils/common-types.ts";
 
 function readStatus(): ApprovalStatus {
     const status = core.getInput('status', {required: false}) || 'AWAITING';
@@ -38,7 +43,7 @@ function readCommitsFromState(): ApprovalState['commits'] | undefined {
 async function resolveCommits(
     octokit: ReturnType<typeof github.getOctokit>,
     appsRepoOctokit: ReturnType<typeof github.getOctokit>,
-    appsRepo: string,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor
 ): Promise<ApprovalState['commits']> {
     const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, appsRepo, descriptor);
@@ -73,7 +78,7 @@ async function run() {
         const octokit = github.getOctokit(ghToken)
 
         const channel = core.getInput("channel", {required: true});
-        const appsRepo = core.getInput("appsRepo", { required: true });
+        const appsRepo = RepoDescriptorSerde.deserialize(core.getInput("appsRepo", { required: true }));
         const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core.getInput('appDescriptor', { required: true }));
 
         const state: ApprovalState = {

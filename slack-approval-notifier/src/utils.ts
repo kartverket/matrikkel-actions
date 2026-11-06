@@ -5,8 +5,9 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import {
     type AppDeployDescriptor,
+    type RepoDescriptor,
     extractImageDescriptorFromYaml,
-    ImageDescriptorSerde
+    ImageDescriptorSerde,
 } from "../../utils/common-types.ts";
 import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
@@ -158,7 +159,7 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
 
 export async function getCurrentVersionFromAppsRepo(
     octokit: InstanceType<typeof GitHub>,
-    appsRepo: string,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
     const versionFile = await getCurrentVersionFromVersionFile(octokit, appsRepo, descriptor);
@@ -169,7 +170,7 @@ export async function getCurrentVersionFromAppsRepo(
 
 async function getCurrentVersionFromVersionFile(
     octokit: InstanceType<typeof GitHub>,
-    appsRepo: string,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
     try {
@@ -186,7 +187,7 @@ async function getCurrentVersionFromVersionFile(
 
 async function getCurrentVersionFromYamlFile(
     octokit: InstanceType<typeof GitHub>,
-    appsRepo: string,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ) {
     try {
@@ -203,15 +204,14 @@ async function getCurrentVersionFromYamlFile(
 
 async function fetchGithubFile(
     octokit: InstanceType<typeof GitHub>,
-    repo: string,
+    repo: RepoDescriptor,
     path: string,
 ): Promise<string> {
-    const repoWithoutOrg = removePrefix('kartverket/', repo);
     const response = await octokit.request(
         "GET /repos/{owner}/{repo}/contents/{path}",
         {
-            owner: 'kartverket',
-            repo: repoWithoutOrg,
+            owner: repo.owner,
+            repo: repo.name,
             path: path,
             ref: 'main',
             headers: {
@@ -269,9 +269,4 @@ export async function getCommitsBetweenVersions(
         core.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
         return [];
     }
-}
-
-function removePrefix(prefix: string, str: string): string {
-    if (!str.startsWith(prefix)) return str;
-    return str.substring(prefix.length)
 }

@@ -40052,6 +40052,14 @@ function extractImageDescriptorFromYaml(app, yaml) {
   requireNotNull(imageDescriptorStr);
   return ImageDescriptorSerde.deserialize(imageDescriptorStr);
 }
+var RepoDescriptorSerde = new Serde((descriptor) => `${descriptor.owner}/${descriptor.name}`, (descriptor) => {
+  const fragments = descriptor.split("/");
+  require2(fragments.length === 2, () => `Invalid repo descriptor: ${descriptor}`);
+  const [owner, name] = fragments;
+  requireNotNullOrEmpty(owner, () => `Field "owner" cannot be null or empty`);
+  requireNotNullOrEmpty(name, () => `Field "name" cannot be null or empty`);
+  return { owner, name };
+});
 
 // src/utils.ts
 var LaFLUT = {
@@ -40199,10 +40207,9 @@ async function getCurrentVersionFromYamlFile(octokit, appsRepo, descriptor) {
   }
 }
 async function fetchGithubFile(octokit, repo, path) {
-  const repoWithoutOrg = removePrefix("kartverket/", repo);
   const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-    owner: "kartverket",
-    repo: repoWithoutOrg,
+    owner: repo.owner,
+    repo: repo.name,
     path,
     ref: "main",
     headers: {
@@ -40250,11 +40257,6 @@ async function getCommitsBetweenVersions(octokit, base, head) {
     core2.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
     return [];
   }
-}
-function removePrefix(prefix, str) {
-  if (!str.startsWith(prefix))
-    return str;
-  return str.substring(prefix.length);
 }
 
 // src/index.ts
@@ -40306,7 +40308,7 @@ async function run() {
     }
     const octokit = github2.getOctokit(ghToken);
     const channel = core3.getInput("channel", { required: true });
-    const appsRepo = core3.getInput("appsRepo", { required: true });
+    const appsRepo = RepoDescriptorSerde.deserialize(core3.getInput("appsRepo", { required: true }));
     const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core3.getInput("appDescriptor", { required: true }));
     const state = {
       environment: core3.getInput("environment", { required: true }),
