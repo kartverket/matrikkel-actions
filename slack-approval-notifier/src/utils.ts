@@ -158,20 +158,22 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
 
 export async function getCurrentVersionFromAppsRepo(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: string,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
-    const versionFile = await getCurrentVersionFromVersionFile(octokit, descriptor);
+    const versionFile = await getCurrentVersionFromVersionFile(octokit, appsRepo, descriptor);
     if (versionFile != null) return versionFile;
 
-    return getCurrentVersionFromYamlFile(octokit, descriptor);
+    return getCurrentVersionFromYamlFile(octokit, appsRepo, descriptor);
 }
 
 async function getCurrentVersionFromVersionFile(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: string,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
     try {
-        const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor))
+        const content = await fetchGithubFile(octokit, appsRepo, versionPathForApp(descriptor))
         const imageDescriptor = ImageDescriptorSerde.deserialize(content);
         core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
         return imageDescriptor.version;
@@ -184,10 +186,11 @@ async function getCurrentVersionFromVersionFile(
 
 async function getCurrentVersionFromYamlFile(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: string,
     descriptor: AppDeployDescriptor,
 ) {
     try {
-        const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor))
+        const content = await fetchGithubFile(octokit, appsRepo, yamlFileForApp(descriptor))
         const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
         core.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
         return imageDescriptor.version;
@@ -198,15 +201,17 @@ async function getCurrentVersionFromYamlFile(
     }
 }
 
-async function fetchHeimdallAppsFile(
+async function fetchGithubFile(
     octokit: InstanceType<typeof GitHub>,
+    repo: string,
     path: string,
 ): Promise<string> {
+    const repoWithoutOrg = removePrefix('kartverket/', repo);
     const response = await octokit.request(
         "GET /repos/{owner}/{repo}/contents/{path}",
         {
             owner: 'kartverket',
-            repo: 'heimdall-apps',
+            repo: repoWithoutOrg,
             path: path,
             ref: 'main',
             headers: {
@@ -264,4 +269,9 @@ export async function getCommitsBetweenVersions(
         core.warning(`Could not compare commits between ${base} and ${head}: ${message}`);
         return [];
     }
+}
+
+function removePrefix(prefix: string, str: string): string {
+    if (!str.startsWith(prefix)) return str;
+    return str.substring(prefix.length)
 }

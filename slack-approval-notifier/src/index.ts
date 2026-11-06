@@ -38,9 +38,10 @@ function readCommitsFromState(): ApprovalState['commits'] | undefined {
 async function resolveCommits(
     octokit: ReturnType<typeof github.getOctokit>,
     appsRepoOctokit: ReturnType<typeof github.getOctokit>,
+    appsRepo: string,
     descriptor: AppDeployDescriptor
 ): Promise<ApprovalState['commits']> {
-    const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
+    const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, appsRepo, descriptor);
     if (!previousVersion) {
         core.warning('Could not find previous version in production');
     }
@@ -72,6 +73,7 @@ async function run() {
         const octokit = github.getOctokit(ghToken)
 
         const channel = core.getInput("channel", {required: true});
+        const appsRepo = core.getInput("appsRepo", { required: true });
         const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core.getInput('appDescriptor', { required: true }));
 
         const state: ApprovalState = {
@@ -94,6 +96,7 @@ async function run() {
             state.commits = await resolveCommits(
                 octokit,
                 appsRepoOctokit,
+                appsRepo,
                 appsRepoDescriptor,
             );
             core.saveState('commits', JSON.stringify(state.commits));
