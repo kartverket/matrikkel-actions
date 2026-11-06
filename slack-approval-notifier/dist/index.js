@@ -40052,6 +40052,14 @@ function extractImageDescriptorFromYaml(app, yaml) {
   requireNotNull(imageDescriptorStr);
   return ImageDescriptorSerde.deserialize(imageDescriptorStr);
 }
+var RepoDescriptorSerde = new Serde((descriptor) => `${descriptor.owner}/${descriptor.name}`, (descriptor) => {
+  const fragments = descriptor.split("/");
+  require2(fragments.length === 2, () => `Invalid repo descriptor: ${descriptor}`);
+  const [owner, name] = fragments;
+  requireNotNullOrEmpty(owner, () => `Field "owner" cannot be null or empty`);
+  requireNotNullOrEmpty(name, () => `Field "name" cannot be null or empty`);
+  return { owner, name };
+});
 
 // src/utils.ts
 var LaFLUT = {
@@ -40168,15 +40176,15 @@ async function getApprovers(octokit) {
   core2.debug(`Got approval response: ${JSON.stringify(approverResponse)}`);
   return approverResponse.data;
 }
-async function getCurrentVersionFromAppsRepo(octokit, descriptor) {
-  const versionFile = await getCurrentVersionFromVersionFile(octokit, descriptor);
+async function getCurrentVersionFromAppsRepo(octokit, appsRepo, descriptor) {
+  const versionFile = await getCurrentVersionFromVersionFile(octokit, appsRepo, descriptor);
   if (versionFile != null)
     return versionFile;
-  return getCurrentVersionFromYamlFile(octokit, descriptor);
+  return getCurrentVersionFromYamlFile(octokit, appsRepo, descriptor);
 }
-async function getCurrentVersionFromVersionFile(octokit, descriptor) {
+async function getCurrentVersionFromVersionFile(octokit, appsRepo, descriptor) {
   try {
-    const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor));
+    const content = await fetchGithubFile(octokit, appsRepo, versionPathForApp(descriptor));
     const imageDescriptor = ImageDescriptorSerde.deserialize(content);
     core2.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
     return imageDescriptor.version;
@@ -40186,9 +40194,9 @@ async function getCurrentVersionFromVersionFile(octokit, descriptor) {
     return null;
   }
 }
-async function getCurrentVersionFromYamlFile(octokit, descriptor) {
+async function getCurrentVersionFromYamlFile(octokit, appsRepo, descriptor) {
   try {
-    const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor));
+    const content = await fetchGithubFile(octokit, appsRepo, yamlFileForApp(descriptor));
     const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
     core2.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
     return imageDescriptor.version;
@@ -40198,10 +40206,10 @@ async function getCurrentVersionFromYamlFile(octokit, descriptor) {
     return null;
   }
 }
-async function fetchHeimdallAppsFile(octokit, path) {
+async function fetchGithubFile(octokit, repo, path) {
   const response = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-    owner: "kartverket",
-    repo: "heimdall-apps",
+    owner: repo.owner,
+    repo: repo.name,
     path,
     ref: "main",
     headers: {
@@ -40273,8 +40281,8 @@ function readCommitsFromState() {
   }
   return JSON.parse(commitsState);
 }
-async function resolveCommits(octokit, appsRepoOctokit, descriptor) {
-  const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, descriptor);
+async function resolveCommits(octokit, appsRepoOctokit, appsRepo, descriptor) {
+  const previousVersion = await getCurrentVersionFromAppsRepo(appsRepoOctokit, appsRepo, descriptor);
   if (!previousVersion) {
     core3.warning("Could not find previous version in production");
   }
@@ -40300,6 +40308,7 @@ async function run() {
     }
     const octokit = github2.getOctokit(ghToken);
     const channel = core3.getInput("channel", { required: true });
+    const appsRepo = RepoDescriptorSerde.deserialize(core3.getInput("appsRepo", { required: true }));
     const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core3.getInput("appDescriptor", { required: true }));
     const state = {
       environment: core3.getInput("environment", { required: true }),
@@ -40316,7 +40325,7 @@ async function run() {
         return;
       }
       const appsRepoOctokit = github2.getOctokit(appsRepoToken);
-      state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepoDescriptor);
+      state.commits = await resolveCommits(octokit, appsRepoOctokit, appsRepo, appsRepoDescriptor);
       core3.saveState("commits", JSON.stringify(state.commits));
     }
     const approvers = await getApprovers(octokit);

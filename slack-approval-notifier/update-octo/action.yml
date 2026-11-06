@@ -17,8 +17,8 @@ inputs:
   identity:
     description: Identity to be used for fetching STS token
     required: true
-  repository:
-    description: Repository used as the STS token scope
+  appsRepo:
+    description: Apps repository used as the STS token scope
     required: false
     default: kartverket/heimdall-apps
 outputs:
@@ -46,6 +46,7 @@ runs:
         appDescriptor: ${{ inputs.appDescriptor }}
         messageId: ${{ inputs.messageId }}
         status: ${{ inputs.status }}
+        appsRepo: ${{ inputs.appsRepo }}
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         APPS_REPO_TOKEN: ${{ steps.octo-sts.outputs.token }}

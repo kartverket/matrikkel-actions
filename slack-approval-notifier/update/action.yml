@@ -17,6 +17,10 @@ inputs:
   appDescriptor:
     description: "App descriptor used to locate the version file in the apps repo (cluster:namespace:appname:version)"
     required: true
+  appsRepo:
+    description: Apps repository used as the STS token scope
+    required: false
+    default: kartverket/heimdall-apps
   messageId:
     description: "Message to update"
     required: true

@@ -5,8 +5,9 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import {
     type AppDeployDescriptor,
+    type RepoDescriptor,
     extractImageDescriptorFromYaml,
-    ImageDescriptorSerde
+    ImageDescriptorSerde,
 } from "../../utils/common-types.ts";
 import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 
@@ -158,20 +159,22 @@ export async function getApprovers(octokit: InstanceType<typeof GitHub>): Promis
 
 export async function getCurrentVersionFromAppsRepo(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
-    const versionFile = await getCurrentVersionFromVersionFile(octokit, descriptor);
+    const versionFile = await getCurrentVersionFromVersionFile(octokit, appsRepo, descriptor);
     if (versionFile != null) return versionFile;
 
-    return getCurrentVersionFromYamlFile(octokit, descriptor);
+    return getCurrentVersionFromYamlFile(octokit, appsRepo, descriptor);
 }
 
 async function getCurrentVersionFromVersionFile(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ): Promise<string | null> {
     try {
-        const content = await fetchHeimdallAppsFile(octokit, versionPathForApp(descriptor))
+        const content = await fetchGithubFile(octokit, appsRepo, versionPathForApp(descriptor))
         const imageDescriptor = ImageDescriptorSerde.deserialize(content);
         core.debug(`Read image descriptor from apps repo: ${JSON.stringify(imageDescriptor)}`);
         return imageDescriptor.version;
@@ -184,10 +187,11 @@ async function getCurrentVersionFromVersionFile(
 
 async function getCurrentVersionFromYamlFile(
     octokit: InstanceType<typeof GitHub>,
+    appsRepo: RepoDescriptor,
     descriptor: AppDeployDescriptor,
 ) {
     try {
-        const content = await fetchHeimdallAppsFile(octokit, yamlFileForApp(descriptor))
+        const content = await fetchGithubFile(octokit, appsRepo, yamlFileForApp(descriptor))
         const imageDescriptor = extractImageDescriptorFromYaml(descriptor, content);
         core.debug(`Read image descriptor from apps repo (YAML): ${JSON.stringify(imageDescriptor)}`);
         return imageDescriptor.version;
@@ -198,15 +202,16 @@ async function getCurrentVersionFromYamlFile(
     }
 }
 
-async function fetchHeimdallAppsFile(
+async function fetchGithubFile(
     octokit: InstanceType<typeof GitHub>,
+    repo: RepoDescriptor,
     path: string,
 ): Promise<string> {
     const response = await octokit.request(
         "GET /repos/{owner}/{repo}/contents/{path}",
         {
-            owner: 'kartverket',
-            repo: 'heimdall-apps',
+            owner: repo.owner,
+            repo: repo.name,
             path: path,
             ref: 'main',
             headers: {

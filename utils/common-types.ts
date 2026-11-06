@@ -89,3 +89,21 @@ export function extractImageDescriptorFromYaml(
 
     return ImageDescriptorSerde.deserialize(imageDescriptorStr);
 }
+
+export type RepoDescriptor = {
+    owner: string;
+    name: string;
+};
+export const RepoDescriptorSerde : Serde<RepoDescriptor> = new Serde(
+    (descriptor) => `${descriptor.owner}/${descriptor.name}`,
+    (descriptor) => {
+        const fragments = descriptor.split('/');
+        require(fragments.length === 2, () => `Invalid repo descriptor: ${descriptor}`);
+
+        const [owner, name] = fragments;
+        requireNotNullOrEmpty(owner, () => `Field "owner" cannot be null or empty`);
+        requireNotNullOrEmpty(name, () => `Field "name" cannot be null or empty`);
+
+        return { owner, name };
+    },
+);
