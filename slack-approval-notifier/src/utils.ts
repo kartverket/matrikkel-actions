@@ -14,6 +14,7 @@ import {versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
 export type ApprovalStatus = 'AWAITING' | 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'CANCELLED';
 export type ApprovalState = {
     status: ApprovalStatus;
+    appname: string;
     version: string;
     environment: string;
     commits: Array<{ gitsha: string; message: string; }>;
@@ -113,7 +114,7 @@ function buildMessage(channel: string, state: ApprovalState) {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": `${laf.icon} Prodsetting av ${github.context.repo.repo}:${state.version} til ${state.environment}`
+                            "text": `${laf.icon} Prodsetting av ${state.appname}:${state.version} til ${state.environment}`
                         }
                     },
                     commitBlock,
