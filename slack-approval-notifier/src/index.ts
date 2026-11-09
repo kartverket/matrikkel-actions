@@ -83,6 +83,7 @@ async function run() {
 
         const state: ApprovalState = {
             environment: core.getInput('environment', {required: true}),
+            appname: appsRepoDescriptor.appname,
             version: appsRepoDescriptor.version,
             status: isPostStep ? readStatus() : (isUpdateStep ? 'RUNNING' : 'AWAITING'),
             commits: readCommitsFromState() ?? [],

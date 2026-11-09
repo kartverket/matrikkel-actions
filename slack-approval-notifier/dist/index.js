@@ -40140,7 +40140,7 @@ function buildMessage(channel, state) {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: `${laf.icon} Prodsetting av ${github.context.repo.repo}:${state.version} til ${state.environment}`
+              text: `${laf.icon} Prodsetting av ${state.appname}:${state.version} til ${state.environment}`
             }
           },
           commitBlock,
@@ -40312,6 +40312,7 @@ async function run() {
     const appsRepoDescriptor = AppDeployDescriptorSerde.deserialize(core3.getInput("appDescriptor", { required: true }));
     const state = {
       environment: core3.getInput("environment", { required: true }),
+      appname: appsRepoDescriptor.appname,
       version: appsRepoDescriptor.version,
       status: isPostStep ? readStatus() : isUpdateStep ? "RUNNING" : "AWAITING",
       commits: readCommitsFromState() ?? []
