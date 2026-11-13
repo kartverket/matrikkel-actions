@@ -46,12 +46,21 @@ describe('ImageDescriptorSerde', () => {
         expect(result.version).toBe('1.0.0');
     });
 
+    it('should handle image-versions includings SHA', () => {
+        const result = ImageDescriptorSerde.deserialize('"ghcr.io/org/appname:2026.11.13-10.58-80e55cc@sha256:54aa71ac6a2139e663cd922"');
+
+        expect(result.name).toBe('ghcr.io/org/appname');
+        expect(result.version).toBe('2026.11.13-10.58-80e55cc');
+        expect(result.sha).toBe('54aa71ac6a2139e663cd922');
+    });
+
     it('should be reversible', () => {
-        const original = { name: 'myapp', version: '1.0.0' };
+        const original = { name: 'myapp', version: '1.0.0', sha: '123abcdef123abcdef' };
         const serialized = ImageDescriptorSerde.serialize(original);
         const deserialized = ImageDescriptorSerde.deserialize(serialized);
         const reserialized = ImageDescriptorSerde.serialize(deserialized);
 
+        expect(deserialized).toMatchObject(original);
         expect(reserialized).toBe(serialized);
     });
 
