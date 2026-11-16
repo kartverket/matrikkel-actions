@@ -40017,14 +40017,23 @@ function yamlFileForApp(descriptor) {
 
 // ../utils/common-types.ts
 var ImageDescriptorSerde = new Serde((descriptor) => {
-  return `"${descriptor.name}:${descriptor.version}"`;
+  const sha = descriptor.sha ? `@sha256:${descriptor.sha}` : "";
+  return `"${descriptor.name}:${descriptor.version}${sha}"`;
 }, (descriptor) => {
-  const fragments = trimQuotes(descriptor.trim()).split(":");
-  const name = fragments.slice(0, -1).join(":");
-  const version = fragments[fragments.length - 1];
+  const fragments = trimQuotes(descriptor.trim()).split(/[:@]/);
+  const hasSha = fragments.some((it) => it === "sha256");
+  const versionIndex = hasSha ? -3 : -1;
+  const name = fragments.slice(0, versionIndex).join(":");
+  const version = fragments[fragments.length + versionIndex];
   requireNotNullOrEmpty(name);
   requireNotNullOrEmpty(version);
-  return { name, version };
+  if (hasSha) {
+    const sha = hasSha ? fragments[fragments.length - 1] : undefined;
+    requireNotNullOrEmpty(sha);
+    return { name, version, sha };
+  } else {
+    return { name, version };
+  }
 });
 var KubernetesAppIdentificatorSerde = new Serde((descriptor) => `${descriptor.namespace}:${descriptor.appname}:${descriptor.version}`, (descriptor) => {
   const fragments = descriptor.split(":").map((it) => it.trim());
