@@ -4,6 +4,7 @@ import * as core from '@actions/core';
 import {findAppDescriptor, getDeployments, interpolate, readAppInputs} from "./common.ts";
 import { expandKubernetesManifests } from "./expansions/expansion.ts";
 import {fatal, getInput} from "../../utils/utils.ts";
+import {pushWithRetry} from "../../utils/git-utils.ts";
 import {createAppsRepoDatabaseMetadataResolver} from "./expansions/expansion-rules/databasesRule.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
@@ -56,9 +57,10 @@ if (!hasChanges) {
         await $`git config user.email "spam@kartverket.no"`;
         await $`git add env`;
         await $`git commit -m "Deploy of apps"`;
-        await $`git fetch origin main`;
-        await $`git rebase origin/main`;
-        await $`git push origin main`;
+        const attempts = await pushWithRetry({branch: 'main'});
+        if (attempts > 1) {
+            core.info(`Pushet etter ${attempts} forsøk pga. samtidige deploys`);
+        }
         core.info(`Updated versions`);
     } catch (e: unknown) {
         fatal(`Failed to push changes. Possible conflict with concurrent deployment: ${e}`)

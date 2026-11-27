@@ -8,8 +8,8 @@ import {
     extractImageDescriptorFromYaml,
     ImageDescriptorSerde
 } from '../../utils/common-types.ts';
-import {require, requireNotNull} from "../../utils/fn-utils.ts";
 import {fatal, versionPathForApp, yamlFileForApp} from "../../utils/utils.ts";
+import {pushWithRetry} from "../../utils/git-utils.ts";
 
 const workspace = process.env['GITHUB_WORKSPACE'];
 if (workspace) {
@@ -93,9 +93,10 @@ if (!hasChanges) {
         await $`git config user.email "spam@kartverket.no"`;
         const [summary, description] = createCommitMessage(updateLog);
         await $`git commit -am "${summary}" -m "${description}" -m "initial config:\n${appsString}"`;
-        await $`git fetch origin main`;
-        await $`git rebase origin/main`;
-        await $`git push origin main`;
+        const attempts = await pushWithRetry({branch: 'main'});
+        if (attempts > 1) {
+            core.info(`Pushet etter ${attempts} forsøk pga. samtidige deploys`);
+        }
         core.info(`Updated ${apps.length} versions`);
     } catch (e: unknown) {
         fatal(`Failed to push changes. Possible conflict with concurrent deployment: ${e}`)
