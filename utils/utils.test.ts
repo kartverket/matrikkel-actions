@@ -1,5 +1,5 @@
 import {describe, expect, it} from "bun:test";
-import {trimQuotes, versionPathForApp} from "./utils.ts";
+import {removeSuffix, trimQuotes, versionPathForApp} from "./utils.ts";
 import type {AppDeployDescriptor} from "./common-types.ts";
 
 describe('versionPathForApp', () => {
@@ -58,4 +58,13 @@ describe('trimQuotes', () => {
     it('should handle empty string', () => {
         expect(trimQuotes('')).toBe('');
     });
-})
+});
+
+describe('removeSuffix', () => {
+   it('should remove suffix if present', () => {
+       expect(removeSuffix('app-suffix', '-suffix')).toBe('app')
+   });
+   it('should not anything if suffix is absent', () => {
+       expect(removeSuffix('app-suffix', '-suffer')).toBe('app-suffix')
+   });
+});

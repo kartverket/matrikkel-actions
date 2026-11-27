@@ -6,6 +6,13 @@ export function trimQuotes(value: string): string {
     return value.replace(/^["']|["']$/g, '');
 }
 
+export function removeSuffix(str: string, suffix: string): string {
+    if (str.endsWith(suffix)) {
+        return str.slice(0, -suffix.length);
+    }
+    return str;
+}
+
 export function versionPathForApp(descriptor: AppDeployDescriptor): string {
     return `env/${descriptor.cluster}/${descriptor.namespace}/${descriptor.appname}/${descriptor.appname}-version`
 }

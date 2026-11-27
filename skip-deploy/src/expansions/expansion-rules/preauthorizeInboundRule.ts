@@ -1,6 +1,7 @@
 import z from 'zod';
 import {ApplicationExpansionContext, type ExpansionRule} from "../ApplicationExpansionContext.ts";
 import {addPreauthorizedApp} from "../crd/AzureAdApplication.ts";
+import {removeSuffix} from "../../../../utils/utils.ts";
 
 const Config = z.object({
     accessPolicy: z.object({
@@ -30,7 +31,7 @@ export const preauthorizeInboundRule: ExpansionRule = {
             addPreauthorizedApp(azureAdAppRegistration, {
                 cluster: context.cluster,
                 namespace: namespace ?? context.namespace,
-                application
+                application: removeSuffix(application, '-skipjob')
             })
         }
     }
